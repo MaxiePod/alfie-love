@@ -1,0 +1,826 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+
+const WORDS = [
+  {w:"Benevolent",d:"Well-meaning and kindly",pos:"adj",t:"easy"},
+  {w:"Candid",d:"Truthful and straightforward",pos:"adj",t:"easy"},
+  {w:"Diligent",d:"Showing careful and persistent effort",pos:"adj",t:"easy"},
+  {w:"Eloquent",d:"Fluent or persuasive in speaking",pos:"adj",t:"easy"},
+  {w:"Frugal",d:"Sparing or economical with money",pos:"adj",t:"easy"},
+  {w:"Gratitude",d:"The quality of being thankful",pos:"n",t:"easy"},
+  {w:"Harmony",d:"Agreement or peaceful coexistence",pos:"n",t:"easy"},
+  {w:"Impartial",d:"Treating all rivals or sides equally",pos:"adj",t:"easy"},
+  {w:"Jubilant",d:"Feeling or expressing great happiness",pos:"adj",t:"easy"},
+  {w:"Keen",d:"Eager or enthusiastic",pos:"adj",t:"easy"},
+  {w:"Lament",d:"To express sorrow or grief",pos:"v",t:"easy"},
+  {w:"Modest",d:"Unassuming in estimation of abilities",pos:"adj",t:"easy"},
+  {w:"Novice",d:"A person new to a field or activity",pos:"n",t:"easy"},
+  {w:"Ominous",d:"Giving the impression something bad will happen",pos:"adj",t:"easy"},
+  {w:"Prudent",d:"Acting with care and thought for the future",pos:"adj",t:"easy"},
+  {w:"Resilient",d:"Able to recover quickly from difficulties",pos:"adj",t:"easy"},
+  {w:"Serene",d:"Calm, peaceful, and untroubled",pos:"adj",t:"easy"},
+  {w:"Trivial",d:"Of little value or importance",pos:"adj",t:"easy"},
+  {w:"Vivid",d:"Producing powerful images in the mind",pos:"adj",t:"easy"},
+  {w:"Wary",d:"Feeling cautious about possible dangers",pos:"adj",t:"easy"},
+  {w:"Zeal",d:"Great energy or enthusiasm for a cause",pos:"n",t:"easy"},
+  {w:"Amiable",d:"Having a friendly and pleasant manner",pos:"adj",t:"easy"},
+  {w:"Bliss",d:"Supreme happiness or great joy",pos:"n",t:"easy"},
+  {w:"Concise",d:"Giving information clearly and briefly",pos:"adj",t:"easy"},
+  {w:"Deter",d:"To discourage someone from doing something",pos:"v",t:"easy"},
+  {w:"Elated",d:"Extremely happy and excited",pos:"adj",t:"easy"},
+  {w:"Fickle",d:"Changing frequently in loyalty or affection",pos:"adj",t:"easy"},
+  {w:"Gist",d:"The main point or substance of a matter",pos:"n",t:"easy"},
+  {w:"Hinder",d:"To create difficulties or delay progress",pos:"v",t:"easy"},
+  {w:"Impede",d:"To delay or prevent by obstructing",pos:"v",t:"easy"},
+  {w:"Lucid",d:"Expressed clearly and easy to understand",pos:"adj",t:"easy"},
+  {w:"Mundane",d:"Lacking interest or excitement; dull",pos:"adj",t:"easy"},
+  {w:"Nurture",d:"To care for and encourage growth",pos:"v",t:"easy"},
+  {w:"Obscure",d:"Not well known or hard to understand",pos:"adj",t:"easy"},
+  {w:"Plausible",d:"Seeming reasonable or probable",pos:"adj",t:"easy"},
+  {w:"Robust",d:"Strong, healthy, and vigorous",pos:"adj",t:"easy"},
+  {w:"Subtle",d:"Fine or delicate; not immediately obvious",pos:"adj",t:"easy"},
+  {w:"Thrive",d:"To grow or develop well; to prosper",pos:"v",t:"easy"},
+  {w:"Abate",d:"To become less intense or widespread",pos:"v",t:"easy"},
+  {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"easy"},
+  {w:"Comply",d:"To act in accordance with a wish or command",pos:"v",t:"easy"},
+  {w:"Demean",d:"To cause a loss of dignity and respect",pos:"v",t:"easy"},
+  {w:"Erratic",d:"Not even or regular in pattern",pos:"adj",t:"easy"},
+  {w:"Feasible",d:"Possible to do easily or conveniently",pos:"adj",t:"easy"},
+  {w:"Gullible",d:"Easily persuaded to believe something",pos:"adj",t:"easy"},
+  {w:"Haughty",d:"Arrogantly superior and disdainful",pos:"adj",t:"easy"},
+  {w:"Innate",d:"Inborn; natural rather than learned",pos:"adj",t:"easy"},
+  {w:"Jovial",d:"Cheerful and friendly",pos:"adj",t:"easy"},
+  {w:"Lavish",d:"Sumptuously rich or elaborate",pos:"adj",t:"easy"},
+  {w:"Meager",d:"Lacking in quantity or quality",pos:"adj",t:"easy"},
+  {w:"Notable",d:"Worthy of attention; remarkable",pos:"adj",t:"easy"},
+  {w:"Ample",d:"Enough or more than enough; plentiful",pos:"adj",t:"easy"},
+  {w:"Berate",d:"To scold or criticize someone angrily",pos:"v",t:"easy"},
+  {w:"Candor",d:"The quality of being open and honest",pos:"n",t:"easy"},
+  {w:"Deviate",d:"To depart from an established course",pos:"v",t:"easy"},
+  {w:"Endorse",d:"To declare public approval or support of",pos:"v",t:"easy"},
+  {w:"Futile",d:"Incapable of producing any useful result",pos:"adj",t:"easy"},
+  {w:"Grim",d:"Very serious or gloomy",pos:"adj",t:"easy"},
+  {w:"Hostility",d:"Unfriendly or antagonistic behavior",pos:"n",t:"easy"},
+  {w:"Ironic",d:"Happening opposite to what is expected",pos:"adj",t:"easy"},
+  {w:"Aberration",d:"A departure from what is normal or expected",pos:"n",t:"med"},
+  {w:"Bolster",d:"To support or strengthen",pos:"v",t:"med"},
+  {w:"Cacophony",d:"A harsh discordant mixture of sounds",pos:"n",t:"med"},
+  {w:"Debilitate",d:"To make someone weak or infirm",pos:"v",t:"med"},
+  {w:"Ephemeral",d:"Lasting for a very short time",pos:"adj",t:"med"},
+  {w:"Fervent",d:"Having or displaying passionate intensity",pos:"adj",t:"med"},
+  {w:"Galvanize",d:"To shock or excite into taking action",pos:"v",t:"med"},
+  {w:"Harbinger",d:"A person or thing announcing the approach of another",pos:"n",t:"med"},
+  {w:"Idiosyncrasy",d:"A distinctive or peculiar individual behavior",pos:"n",t:"med"},
+  {w:"Juxtapose",d:"To place close together for contrast",pos:"v",t:"med"},
+  {w:"Kindle",d:"To arouse or inspire an emotion or feeling",pos:"v",t:"med"},
+  {w:"Lethargy",d:"A lack of energy and enthusiasm",pos:"n",t:"med"},
+  {w:"Meticulous",d:"Showing great attention to detail",pos:"adj",t:"med"},
+  {w:"Nonchalant",d:"Appearing casually calm and relaxed",pos:"adj",t:"med"},
+  {w:"Ostentatious",d:"Designed to impress; showy",pos:"adj",t:"med"},
+  {w:"Paradox",d:"A seemingly contradictory statement that may be true",pos:"n",t:"med"},
+  {w:"Quandary",d:"A state of uncertainty or perplexity",pos:"n",t:"med"},
+  {w:"Recluse",d:"A person who lives in seclusion",pos:"n",t:"med"},
+  {w:"Scrutinize",d:"To examine or inspect closely and thoroughly",pos:"v",t:"med"},
+  {w:"Tangible",d:"Clear and definite; able to be touched",pos:"adj",t:"med"},
+  {w:"Ubiquitous",d:"Present, appearing, or found everywhere",pos:"adj",t:"med"},
+  {w:"Vindicate",d:"To clear of accusation or blame",pos:"v",t:"med"},
+  {w:"Wistful",d:"Having a feeling of vague longing",pos:"adj",t:"med"},
+  {w:"Alleviate",d:"To make suffering less severe",pos:"v",t:"med"},
+  {w:"Brevity",d:"Concise and exact use of words",pos:"n",t:"med"},
+  {w:"Complacent",d:"Smug and uncritically satisfied",pos:"adj",t:"med"},
+  {w:"Disparage",d:"To regard as being of little worth",pos:"v",t:"med"},
+  {w:"Fluctuate",d:"To rise and fall irregularly",pos:"v",t:"med"},
+  {w:"Gratuitous",d:"Uncalled for; lacking good reason",pos:"adj",t:"med"},
+  {w:"Hypothesis",d:"A proposed explanation with limited evidence",pos:"n",t:"med"},
+  {w:"Malleable",d:"Easily influenced or shaped",pos:"adj",t:"med"},
+  {w:"Nostalgic",d:"Feeling longing for things of the past",pos:"adj",t:"med"},
+  {w:"Orthodox",d:"Conforming to traditional beliefs or practices",pos:"adj",t:"med"},
+  {w:"Pragmatic",d:"Dealing with things in a practical way",pos:"adj",t:"med"},
+  {w:"Repudiate",d:"To refuse to accept or be associated with",pos:"v",t:"med"},
+  {w:"Superfluous",d:"More than what is needed; unnecessary",pos:"adj",t:"med"},
+  {w:"Tenacious",d:"Holding firmly to something; persistent",pos:"adj",t:"med"},
+  {w:"Verbose",d:"Using or expressed in more words than needed",pos:"adj",t:"med"},
+  {w:"Ambivalent",d:"Having mixed feelings about something",pos:"adj",t:"med"},
+  {w:"Benign",d:"Gentle and kindly; not harmful",pos:"adj",t:"med"},
+  {w:"Catalyst",d:"A person or thing that causes change",pos:"n",t:"med"},
+  {w:"Disdain",d:"A feeling that someone is unworthy of respect",pos:"n",t:"med"},
+  {w:"Exacerbate",d:"To make a problem or situation worse",pos:"v",t:"med"},
+  {w:"Forlorn",d:"Pitifully sad and abandoned or lonely",pos:"adj",t:"med"},
+  {w:"Gregarious",d:"Fond of company; sociable",pos:"adj",t:"med"},
+  {w:"Heresy",d:"Belief or opinion contrary to orthodox doctrine",pos:"n",t:"med"},
+  {w:"Impervious",d:"Unable to be affected or disturbed",pos:"adj",t:"med"},
+  {w:"Languish",d:"To lose or lack vitality; to grow weak",pos:"v",t:"med"},
+  {w:"Mitigate",d:"To make less severe or serious",pos:"v",t:"med"},
+  {w:"Nuance",d:"A subtle difference in meaning or expression",pos:"n",t:"med"},
+  {w:"Preclude",d:"To prevent from happening; to make impossible",pos:"v",t:"med"},
+  {w:"Querulous",d:"Complaining in a whining manner",pos:"adj",t:"med"},
+  {w:"Reverence",d:"Deep respect for someone or something",pos:"n",t:"med"},
+  {w:"Stoic",d:"Enduring pain without showing feelings",pos:"adj",t:"med"},
+  {w:"Transient",d:"Lasting only for a short time",pos:"adj",t:"med"},
+  {w:"Unequivocal",d:"Leaving no doubt; unambiguous",pos:"adj",t:"med"},
+  {w:"Venerate",d:"To regard with great respect",pos:"v",t:"med"},
+  {w:"Aesthetic",d:"Concerned with beauty or art appreciation",pos:"adj",t:"med"},
+  {w:"Conundrum",d:"A confusing and difficult problem or question",pos:"n",t:"med"},
+  {w:"Dogmatic",d:"Inclined to lay down principles as true",pos:"adj",t:"med"},
+  {w:"Empirical",d:"Based on observation rather than theory",pos:"adj",t:"med"},
+  {w:"Frivolous",d:"Not having any serious purpose or value",pos:"adj",t:"med"},
+  {w:"Hedonist",d:"A person who pursues pleasure above all else",pos:"n",t:"med"},
+  {w:"Inquisitive",d:"Curious or inquiring",pos:"adj",t:"med"},
+  {w:"Judiciously",d:"With good judgment or sense",pos:"adv",t:"med"},
+  {w:"Laud",d:"To praise someone or something highly",pos:"v",t:"med"},
+  {w:"Maverick",d:"An independent-minded person",pos:"n",t:"med"},
+  {w:"Negate",d:"To nullify or make ineffective",pos:"v",t:"med"},
+  {w:"Penchant",d:"A strong habitual liking for something",pos:"n",t:"med"},
+  {w:"Refute",d:"To prove a statement or theory to be wrong",pos:"v",t:"med"},
+  {w:"Abnegate",d:"To renounce or reject something",pos:"v",t:"hard"},
+  {w:"Bellicose",d:"Demonstrating aggression and willingness to fight",pos:"adj",t:"hard"},
+  {w:"Capitulate",d:"To cease to resist an opponent; to surrender",pos:"v",t:"hard"},
+  {w:"Deleterious",d:"Causing harm or damage",pos:"adj",t:"hard"},
+  {w:"Enervate",d:"To cause someone to feel drained of energy",pos:"v",t:"hard"},
+  {w:"Fastidious",d:"Very attentive to accuracy and detail",pos:"adj",t:"hard"},
+  {w:"Grandiloquent",d:"Pompous or extravagant in language or style",pos:"adj",t:"hard"},
+  {w:"Hegemony",d:"Dominance of one group over others",pos:"n",t:"hard"},
+  {w:"Iconoclast",d:"A person who attacks cherished beliefs",pos:"n",t:"hard"},
+  {w:"Laconic",d:"Using very few words; terse",pos:"adj",t:"hard"},
+  {w:"Malfeasance",d:"Wrongdoing, especially by a public official",pos:"n",t:"hard"},
+  {w:"Nefarious",d:"Wicked or criminal in nature",pos:"adj",t:"hard"},
+  {w:"Obsequious",d:"Excessively obedient or attentive; servile",pos:"adj",t:"hard"},
+  {w:"Perfunctory",d:"Carried out with little effort or reflection",pos:"adj",t:"hard"},
+  {w:"Recalcitrant",d:"Having an obstinately uncooperative attitude",pos:"adj",t:"hard"},
+  {w:"Sycophant",d:"A person who flatters someone important",pos:"n",t:"hard"},
+  {w:"Truculent",d:"Eager or quick to argue or fight",pos:"adj",t:"hard"},
+  {w:"Unconscionable",d:"Not right or reasonable; excessive",pos:"adj",t:"hard"},
+  {w:"Vacillate",d:"To alternate between opinions; to waver",pos:"v",t:"hard"},
+  {w:"Acrimonious",d:"Angry and bitter in tone or manner",pos:"adj",t:"hard"},
+  {w:"Bombastic",d:"High-sounding language with little meaning",pos:"adj",t:"hard"},
+  {w:"Chicanery",d:"The use of trickery to achieve an end",pos:"n",t:"hard"},
+  {w:"Didactic",d:"Intended to teach a moral lesson",pos:"adj",t:"hard"},
+  {w:"Equivocate",d:"To use ambiguous language to conceal truth",pos:"v",t:"hard"},
+  {w:"Furtive",d:"Attempting to avoid notice; secretive",pos:"adj",t:"hard"},
+  {w:"Hubris",d:"Excessive pride or self-confidence",pos:"n",t:"hard"},
+  {w:"Incorrigible",d:"Not able to be corrected or reformed",pos:"adj",t:"hard"},
+  {w:"Jingoism",d:"Extreme patriotism in aggressive foreign policy",pos:"n",t:"hard"},
+  {w:"Kowtow",d:"To act in an excessively submissive manner",pos:"v",t:"hard"},
+  {w:"Loquacious",d:"Tending to talk a great deal; talkative",pos:"adj",t:"hard"},
+  {w:"Magnanimous",d:"Very generous or forgiving toward rivals",pos:"adj",t:"hard"},
+  {w:"Obfuscate",d:"To render obscure or unclear",pos:"v",t:"hard"},
+  {w:"Pernicious",d:"Having a harmful effect, especially gradually",pos:"adj",t:"hard"},
+  {w:"Reticent",d:"Not revealing thoughts or feelings readily",pos:"adj",t:"hard"},
+  {w:"Sanguine",d:"Optimistic or positive in a difficult situation",pos:"adj",t:"hard"},
+  {w:"Trepidation",d:"A feeling of fear about something that may happen",pos:"n",t:"hard"},
+  {w:"Abrogate",d:"To repeal or do away with formally",pos:"v",t:"hard"},
+  {w:"Churlish",d:"Rude in a mean-spirited and surly way",pos:"adj",t:"hard"},
+  {w:"Diffident",d:"Modest or shy due to a lack of confidence",pos:"adj",t:"hard"},
+  {w:"Ebullient",d:"Cheerful and full of energy",pos:"adj",t:"hard"},
+  {w:"Garrulous",d:"Excessively talkative about trivial things",pos:"adj",t:"hard"},
+  {w:"Harangue",d:"A lengthy and aggressive speech",pos:"n",t:"hard"},
+  {w:"Insipid",d:"Lacking flavor, vigor, or interest",pos:"adj",t:"hard"},
+  {w:"Lugubrious",d:"Looking or sounding sad and dismal",pos:"adj",t:"hard"},
+  {w:"Mendacious",d:"Not telling the truth; lying",pos:"adj",t:"hard"},
+  {w:"Obstreperous",d:"Noisy and difficult to control",pos:"adj",t:"hard"},
+  {w:"Parsimonious",d:"Extremely unwilling to spend money; miserly",pos:"adj",t:"hard"},
+  {w:"Quixotic",d:"Exceedingly idealistic; unrealistic",pos:"adj",t:"hard"},
+  {w:"Recondite",d:"Little known or obscure; abstruse",pos:"adj",t:"hard"},
+  {w:"Sagacious",d:"Having or showing keen discernment and judgment",pos:"adj",t:"hard"},
+  {w:"Temerity",d:"Excessive confidence or boldness; audacity",pos:"n",t:"hard"},
+  {w:"Unctuous",d:"Excessively flattering or ingratiating",pos:"adj",t:"hard"},
+  {w:"Verisimilitude",d:"The appearance of being true or real",pos:"n",t:"hard"},
+  {w:"Winsome",d:"Attractive or appealing in a fresh way",pos:"adj",t:"hard"},
+  {w:"Assiduously",d:"With great care, attention, and effort",pos:"adv",t:"hard"},
+  {w:"Calumny",d:"The making of false statements to damage reputation",pos:"n",t:"hard"},
+  {w:"Desultory",d:"Lacking a plan or purpose; random",pos:"adj",t:"hard"},
+  {w:"Effrontery",d:"Insolent or impertinent behavior",pos:"n",t:"hard"},
+  {w:"Fatuous",d:"Silly and pointless",pos:"adj",t:"hard"},
+  {w:"Ignominious",d:"Deserving or causing public disgrace",pos:"adj",t:"hard"},
+  {w:"Litigious",d:"Tending or too inclined to bring lawsuits",pos:"adj",t:"hard"},
+  {w:"Munificent",d:"Larger or more generous than usual",pos:"adj",t:"hard"},
+  {w:"Opprobrium",d:"Harsh criticism or censure",pos:"n",t:"hard"},
+  {w:"Pusillanimous",d:"Showing a lack of courage; timid",pos:"adj",t:"hard"},
+  {w:"Risible",d:"Relating to laughter; laughable",pos:"adj",t:"hard"},
+  {w:"Specious",d:"Superficially plausible but actually wrong",pos:"adj",t:"hard"},
+  {w:"Tendentious",d:"Expressing a strong opinion; biased",pos:"adj",t:"hard"},
+  {w:"Vituperative",d:"Bitter and abusive in language",pos:"adj",t:"hard"},
+  {w:"Atavistic",d:"Relating to reversion to an ancestral type",pos:"adj",t:"hard"},
+  {w:"Circumlocution",d:"Using many words where fewer would do",pos:"n",t:"hard"},
+];
+
+const TIERS = [{value:"all",label:"All"},{value:"easy",label:"Easy"},{value:"med",label:"Medium"},{value:"hard",label:"Hard"}];
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+const posLabel = function(p) { return p==="n"?"noun":p==="v"?"verb":p==="adv"?"adverb":"adjective"; };
+
+function scoreTier(s){
+  if(s>=70) return {tier:"full",pts:1,color:"#5cb870",bg:"rgba(92,184,112,0.1)",label:"Nailed it",icon:"\u2713"};
+  if(s>=40) return {tier:"partial",pts:0.5,color:"#d4a843",bg:"rgba(212,168,67,0.06)",label:"Close",icon:"\u2248"};
+  return {tier:"miss",pts:0,color:"#d45555",bg:"rgba(212,85,85,0.08)",label:"Off target",icon:"\u2717"};
+}
+
+async function aiJudge(word, correctDef, userAnswer){
+  try {
+    var r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: "You are a vocabulary quiz judge. Score how well a player's answer captures a word's meaning on a scale of 0-100.\n\nScoring guide:\n- 90-100: Perfect or near-perfect definition, correct synonym, or textbook answer\n- 70-89: Clearly understands the meaning. Good synonym, reasonable paraphrase, or example that shows understanding\n- 50-69: In the right neighborhood. Gets the general vibe or one aspect right but incomplete or slightly off\n- 30-49: Vaguely related. Some dim awareness but too imprecise\n- 10-29: Mostly wrong. Maybe confused with a similar word\n- 0-9: Completely wrong, opposite meaning, or gibberish\n\nBe generous with informal language and slang. \"happy\" for Jubilant = 85. \"cheap\" for Frugal = 80. \"kinda sad\" for Forlorn = 70. \"energy\" for Lethargy = 15 (opposite).\n\nRespond with ONLY a JSON object, no markdown: {\"score\": <0-100>, \"note\": \"<brief 4-8 word explanation>\"}",
+        messages: [{role: "user", content: "Word: \"" + word + "\"\nDefinition: \"" + correctDef + "\"\nPlayer wrote: \"" + userAnswer + "\""}]
+      })
+    });
+    var d = await r.json();
+    var t = d.content.map(function(i){ return i.text || ""; }).join("").replace(/```json|```/g, "").trim();
+    var parsed = JSON.parse(t);
+    return {score: Math.max(0, Math.min(100, parsed.score || 0)), note: parsed.note || ""};
+  } catch(err) {
+    console.error("AI judge error:", err);
+    var ua = userAnswer.toLowerCase();
+    var cd = correctDef.toLowerCase();
+    var kw = cd.split(/\s+/).filter(function(w){ return w.length > 3; });
+    var hits = kw.filter(function(k){ return ua.includes(k); }).length;
+    var sc = kw.length > 0 ? Math.round((hits / kw.length) * 80) : 20;
+    return {score: sc, note: sc >= 40 ? "Keyword match (offline)" : "No match (offline)"};
+  }
+}
+
+var C = {
+  bg:"#0c0c0e",card:"#131316",cardBorder:"#1e1e22",
+  text:"#dcdce0",textMuted:"#9a9aa0",textDim:"#7a7a82",
+  white:"#e4e4e8",accent:"#b8b8be",btnBg:"#a0a0a6",btnText:"#0c0c0e",
+  green:"#5cb870",greenBg:"rgba(92,184,112,0.1)",
+  red:"#d45555",redBg:"rgba(212,85,85,0.08)",
+  gold:"#d4a843",goldBg:"rgba(212,168,67,0.06)",
+  inputBg:"#0e0e11",inputBorder:"#222228",
+  purple:"#9b8ec4",purpleBg:"rgba(155,142,196,0.08)",
+};
+var styles = {
+  app:{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Roboto', sans-serif",fontWeight:300,display:"flex",flexDirection:"column",alignItems:"center",padding:"20px",boxSizing:"border-box"},
+  title:{fontSize:"32px",fontWeight:100,letterSpacing:"8px",textTransform:"uppercase",marginBottom:"4px",color:C.white},
+  subtitle:{fontSize:"11px",letterSpacing:"4px",textTransform:"uppercase",color:C.textMuted,marginBottom:"40px"},
+  card:{background:C.card,border:"1px solid "+C.cardBorder,borderRadius:"3px",padding:"24px 20px",width:"100%",maxWidth:"680px",boxSizing:"border-box"},
+  label:{fontSize:"10px",letterSpacing:"3px",textTransform:"uppercase",color:C.textMuted,marginBottom:"10px",display:"block"},
+  btn:{background:C.btnBg,color:C.btnText,border:"none",padding:"14px 32px",fontSize:"12px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"3px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"},
+  btnOutline:{background:"transparent",color:C.text,border:"1px solid "+C.inputBorder,padding:"10px 20px",fontSize:"11px",fontFamily:"'Roboto', sans-serif",fontWeight:300,letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"},
+  input:{background:C.inputBg,border:"1px solid "+C.inputBorder,borderBottom:"2px solid #333",color:C.white,padding:"14px 16px",fontSize:"18px",fontFamily:"'Roboto', sans-serif",fontWeight:300,borderRadius:"2px",width:"100%",outline:"none",boxSizing:"border-box",textAlign:"center"},
+  timer:{fontFamily:"'Roboto Mono', monospace",fontSize:"42px",fontWeight:100,color:C.white,letterSpacing:"2px",textAlign:"center"},
+  choiceBtn:{flex:"1 1 100%",minWidth:"0",background:"#18181c",border:"1px solid "+C.inputBorder,color:C.text,padding:"14px 16px",fontSize:"14px",fontFamily:"'Roboto', sans-serif",fontWeight:300,cursor:"pointer",borderRadius:"2px",textAlign:"left",transition:"all 0.15s",lineHeight:"1.35"},
+};
+
+function ScoreBar(props){
+  var score = props.score;
+  var height = props.height || 8;
+  var t = scoreTier(score);
+  var grad = score >= 70 ? "linear-gradient(90deg, "+C.green+", #7dd98f)" : score >= 40 ? "linear-gradient(90deg, "+C.gold+", #f0d878)" : "linear-gradient(90deg, "+C.red+", #ff8a8a)";
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:"10px",width:"100%"}}>
+      <div style={{flex:1,height:height+"px",background:"#1e1e22",borderRadius:height/2+"px",overflow:"hidden"}}>
+        <div style={{width:score+"%",height:"100%",borderRadius:height/2+"px",background:grad,transition:"width 0.6s cubic-bezier(.4,0,.2,1)"}}/>
+      </div>
+      <span style={{fontSize:"13px",fontWeight:400,color:t.color,minWidth:"36px",textAlign:"right",fontFamily:"'Roboto Mono', monospace"}}>{score}%</span>
+    </div>
+  );
+}
+
+function Timer(props){
+  var running = props.running, onTick = props.onTick, resetKey = props.resetKey;
+  var [ms, setMs] = useState(0);
+  var ref = useRef(null);
+  var startRef = useRef(0);
+  useEffect(function(){ setMs(0); if(ref.current) cancelAnimationFrame(ref.current); }, [resetKey]);
+  useEffect(function(){
+    if(running){
+      startRef.current = performance.now() - ms;
+      var tick = function(){ var e = performance.now() - startRef.current; setMs(e); if(onTick) onTick(e); ref.current = requestAnimationFrame(tick); };
+      ref.current = requestAnimationFrame(tick);
+    } else { if(ref.current) cancelAnimationFrame(ref.current); }
+    return function(){ if(ref.current) cancelAnimationFrame(ref.current); };
+  }, [running]);
+  var fmt = function(t){ var tot=Math.floor(t); var m=Math.floor(tot/60000); var s=Math.floor((tot%60000)/1000); var cs=Math.floor((tot%1000)/10); return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+String(cs).padStart(2,"0"); };
+  return <div style={styles.timer}>{fmt(ms)}</div>;
+}
+
+function SegmentedControl(props){
+  var options = props.options, value = props.value, onChange = props.onChange;
+  return(
+    <div style={{display:"flex",border:"1px solid "+C.inputBorder,borderRadius:"2px",overflow:"hidden"}}>
+      {options.map(function(opt){
+        return <button key={opt.value} onClick={function(){ onChange(opt.value); }} style={{
+          flex:1,padding:"10px 12px",fontSize:"11px",fontFamily:"'Roboto', sans-serif",
+          fontWeight:value===opt.value?400:300,letterSpacing:"1.5px",textTransform:"uppercase",
+          background:value===opt.value?C.accent:"transparent",color:value===opt.value?C.bg:C.textMuted,
+          border:"none",cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",
+        }}>{opt.label}</button>;
+      })}
+    </div>
+  );
+}
+
+function FeedbackCard(props) {
+  var answered = props.answered;
+  var word = props.word;
+  if (!answered || !answered.score && answered.score !== 0) return null;
+  var t = scoreTier(answered.score);
+  return (
+    <div style={{marginTop:"16px"}}>
+      <div style={{marginBottom:"12px"}}><ScoreBar score={answered.score}/></div>
+      <div style={{padding:"12px 16px",borderRadius:"2px",marginBottom:"8px",background:t.bg,border:"1px solid "+t.color}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:"13px",fontWeight:400,color:t.color}}>
+            {t.icon + " " + t.label + " \u2014 " + (t.pts===1?"1 point":t.pts===0.5?"0.5 points":"0 points")}
+          </div>
+          <div style={{fontSize:"18px",fontWeight:400,color:t.color,fontFamily:"'Roboto Mono', monospace"}}>{answered.score}%</div>
+        </div>
+        {answered.note ? <div style={{fontSize:"11px",color:C.textDim,marginTop:"4px"}}>{answered.note}</div> : null}
+      </div>
+      <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.5"}}>
+        <span style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim}}>Definition: </span>{word.d}
+      </div>
+    </div>
+  );
+}
+
+export default function SATVocab(){
+  var [screen, setScreen] = useState("setup");
+  var [mode, setMode] = useState("race");
+  var [inputType, setInputType] = useState("choice");
+  var [tier, setTier] = useState("all");
+  var [numChoices, setNumChoices] = useState(4);
+  var [raceCount, setRaceCount] = useState(20);
+  var [playerCount, setPlayerCount] = useState(1);
+  var [playerNames, setPlayerNames] = useState(["Player 1"]);
+  var [currentPlayerIdx, setCurrentPlayerIdx] = useState(0);
+  var [results, setResults] = useState([]);
+  var [questions, setQuestions] = useState([]);
+  var [qIndex, setQIndex] = useState(0);
+  var [mistakes, setMistakes] = useState(0);
+  var [points, setPoints] = useState(0);
+  var [totalAnswered, setTotalAnswered] = useState(0);
+  var [totalScoreSum, setTotalScoreSum] = useState(0);
+  var [streak, setStreak] = useState(0);
+  var [bestStreak, setBestStreak] = useState(0);
+  var [timerRunning, setTimerRunning] = useState(false);
+  var [timerKey, setTimerKey] = useState(0);
+  var [answered, setAnswered] = useState(null);
+  var [wordLog, setWordLog] = useState([]);
+  var [gameOver, setGameOver] = useState(false);
+  var [typedAnswer, setTypedAnswer] = useState("");
+  var [judging, setJudging] = useState(false);
+  var timeRef = useRef(0);
+  var inputRef = useRef(null);
+
+  // ── REFS to solve stale closures in setTimeout callbacks ──
+  var mistakesRef = useRef(0);
+  var pointsRef = useRef(0);
+  var totalAnsweredRef = useRef(0);
+  var totalScoreSumRef = useRef(0);
+  var streakRef = useRef(0);
+  var bestStreakRef = useRef(0);
+  var wordLogRef = useRef([]);
+  var qIndexRef = useRef(0);
+
+  // Keep refs in sync with state
+  useEffect(function(){ mistakesRef.current = mistakes; }, [mistakes]);
+  useEffect(function(){ pointsRef.current = points; }, [points]);
+  useEffect(function(){ totalAnsweredRef.current = totalAnswered; }, [totalAnswered]);
+  useEffect(function(){ totalScoreSumRef.current = totalScoreSum; }, [totalScoreSum]);
+  useEffect(function(){ streakRef.current = streak; }, [streak]);
+  useEffect(function(){ bestStreakRef.current = bestStreak; }, [bestStreak]);
+  useEffect(function(){ wordLogRef.current = wordLog; }, [wordLog]);
+  useEffect(function(){ qIndexRef.current = qIndex; }, [qIndex]);
+
+  var pool = useMemo(function(){ return tier==="all" ? WORDS : WORDS.filter(function(w){ return w.t===tier; }); }, [tier]);
+  var totalAvailable = pool.length;
+  var raceOptions = useMemo(function(){
+    var o = [10,15,20,25,40,50].filter(function(n){ return n<=totalAvailable; });
+    if(o.indexOf(totalAvailable)===-1) o.push(totalAvailable);
+    return Array.from(new Set(o)).sort(function(a,b){ return a-b; });
+  }, [totalAvailable]);
+  useEffect(function(){ if(raceCount>totalAvailable) setRaceCount(Math.min(20,totalAvailable)); }, [totalAvailable]);
+
+  var generateQuestions = useCallback(function(){
+    var sh = shuffle(pool);
+    var count = mode==="race" ? raceCount : sh.length;
+    return sh.slice(0,count).map(function(word){
+      var dist = shuffle(pool.filter(function(w){ return w.w!==word.w; })).slice(0,numChoices-1);
+      return {word:word, options:shuffle([word].concat(dist))};
+    });
+  }, [pool, mode, raceCount, numChoices]);
+
+  var startGame = function(){
+    var names = Array.from({length:playerCount}, function(_,i){ return playerNames[i] || "Player "+(i+1); });
+    setPlayerNames(names); setResults([]); setCurrentPlayerIdx(0); startPlayerRound();
+  };
+  var startPlayerRound = function(){
+    setQuestions(generateQuestions()); setQIndex(0); setMistakes(0); setPoints(0);
+    setTotalAnswered(0); setTotalScoreSum(0);
+    setStreak(0); setBestStreak(0); setAnswered(null); setTypedAnswer("");
+    setWordLog([]); setGameOver(false); setTimerKey(function(k){ return k+1; });
+    // Reset refs too
+    mistakesRef.current=0; pointsRef.current=0; totalAnsweredRef.current=0;
+    totalScoreSumRef.current=0; streakRef.current=0; bestStreakRef.current=0;
+    wordLogRef.current=[]; qIndexRef.current=0;
+    setTimerRunning(true); setScreen("playing");
+  };
+
+  useEffect(function(){
+    if(screen==="playing" && inputType==="type" && !answered && !judging && inputRef.current) inputRef.current.focus();
+  }, [qIndex, screen, inputType, answered, judging]);
+
+  var processResult = function(score, q, yourAnswer){
+    var t = scoreTier(score);
+    // Update state
+    setTotalAnswered(function(n){ return n+1; });
+    setTotalScoreSum(function(s){ return s+score; });
+    setPoints(function(p){ return p+t.pts; });
+    setWordLog(function(prev){ return prev.concat([{w:q.word.w,d:q.word.d,pos:q.word.pos,t:q.word.t,yourAnswer:yourAnswer,score:score,tier:t.tier}]); });
+    // Update refs immediately (these are read in setTimeout)
+    totalAnsweredRef.current += 1;
+    totalScoreSumRef.current += score;
+    pointsRef.current += t.pts;
+    wordLogRef.current = wordLogRef.current.concat([{w:q.word.w,d:q.word.d,pos:q.word.pos,t:q.word.t,yourAnswer:yourAnswer,score:score,tier:t.tier}]);
+
+    if(t.tier==="full" || t.tier==="partial"){
+      var ns = streakRef.current + 1;
+      streakRef.current = ns;
+      bestStreakRef.current = Math.max(bestStreakRef.current, ns);
+      setStreak(ns);
+      setBestStreak(bestStreakRef.current);
+    } else {
+      mistakesRef.current += 1;
+      streakRef.current = 0;
+      setMistakes(mistakesRef.current);
+      setStreak(0);
+    }
+    return t;
+  };
+
+  var advanceAfterAnswer = function(isMiss, questionsLen){
+    var delay = isMiss ? 1800 : 900;
+    setTimeout(function(){
+      var newMistakes = mistakesRef.current;
+      var newQ = qIndexRef.current + 1;
+      if((mode==="survival" && newMistakes>=3) || (mode==="race" && newQ>=questionsLen)){
+        setTimerRunning(false);
+        finishRound();
+      } else {
+        qIndexRef.current = newQ;
+        setQIndex(newQ);
+        setAnswered(null);
+        setTypedAnswer("");
+      }
+    }, delay);
+  };
+
+  var handleChoiceAnswer = function(selectedWord){
+    if(answered) return;
+    var q = questions[qIndex];
+    var score = selectedWord===q.word.w ? 100 : 0;
+    var t = processResult(score, q, selectedWord);
+    setAnswered({score:score, note:""});
+    advanceAfterAnswer(t.tier==="miss", questions.length);
+  };
+
+  var handleTypedSubmit = async function(){
+    if(answered || judging || !typedAnswer.trim()) return;
+    var q = questions[qIndex];
+    setTimerRunning(false); setJudging(true);
+    var result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim());
+    setTimerRunning(true); setJudging(false);
+    var t = processResult(result.score, q, typedAnswer.trim());
+    setAnswered({score:result.score, note:result.note});
+    advanceAfterAnswer(t.tier==="miss", questions.length);
+  };
+
+  var handleTypeKeyDown = function(e){ if(e.key==="Enter") handleTypedSubmit(); };
+
+  var finishRound = function(){
+    setGameOver(true);
+    var avg = totalAnsweredRef.current > 0 ? Math.round(totalScoreSumRef.current / totalAnsweredRef.current) : 0;
+    setResults(function(prev){ return prev.concat([{
+      player: playerNames[currentPlayerIdx],
+      points: pointsRef.current,
+      mistakes: mistakesRef.current,
+      time: timeRef.current,
+      bestStreak: bestStreakRef.current,
+      wordLog: wordLogRef.current.slice(),
+      exited: false,
+      avgScore: avg,
+      totalAnswered: totalAnsweredRef.current,
+    }]); });
+    setTimeout(function(){ setScreen(currentPlayerIdx+1<playerCount ? "transition" : "results"); }, 1500);
+  };
+
+  var nextPlayer = function(){ setCurrentPlayerIdx(function(i){ return i+1; }); startPlayerRound(); };
+  var resetAll = function(){ setScreen("setup"); setResults([]); setCurrentPlayerIdx(0); };
+  var exitGame = function(){
+    setTimerRunning(false); setGameOver(true);
+    var avg = totalAnsweredRef.current > 0 ? Math.round(totalScoreSumRef.current / totalAnsweredRef.current) : 0;
+    setResults(function(prev){ return prev.concat([{
+      player: playerNames[currentPlayerIdx],
+      points: pointsRef.current,
+      mistakes: mistakesRef.current,
+      time: timeRef.current,
+      bestStreak: bestStreakRef.current,
+      wordLog: wordLogRef.current.slice(),
+      exited: true,
+      avgScore: avg,
+      totalAnswered: totalAnsweredRef.current,
+    }]); });
+    if(currentPlayerIdx+1<playerCount) setScreen("transition"); else setScreen("results");
+  };
+
+  var fmtTime = function(t){ var tot=Math.floor(t); var m=Math.floor(tot/60000); var s=Math.floor((tot%60000)/1000); var cs=Math.floor((tot%1000)/10); return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+String(cs).padStart(2,"0"); };
+
+  var currentQ = questions[qIndex];
+  var fontLink = <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500&family=Roboto+Mono:wght@100;300;400&display=swap" rel="stylesheet"/>;
+  var pulseCSS = <style>{"@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}"}</style>;
+
+  // ══════ SETUP ══════
+  if(screen==="setup"){
+    return(
+      <div style={styles.app}>{fontLink}{pulseCSS}
+        <div style={styles.title}>Lexicon</div>
+        <div style={styles.subtitle}>{WORDS.length} SAT vocabulary words</div>
+        <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
+          <div style={styles.label}>Game Mode</div>
+          <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
+          <div style={{fontSize:"12px",color:C.textMuted,marginTop:"8px"}}>{mode==="race"?"Answer a set number of words as fast as possible.":"How many can you get right? Three strikes and you're out."}</div>
+        </div>
+        <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
+          <div style={{display:"flex",flexDirection:"column",gap:"20px"}}>
+            <div>
+              <div style={styles.label}>Input Method</div>
+              <SegmentedControl options={[{value:"choice",label:"Word \u2192 Def"},{value:"reverse",label:"Def \u2192 Word"},{value:"type",label:"Type It"}]} value={inputType} onChange={setInputType}/>
+              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{inputType==="type"?"Type any definition — AI scores how close you are (0-100%).":inputType==="reverse"?"See the definition, pick the correct word.":"See the word, pick the correct definition."}</div>
+            </div>
+            <div>
+              <div style={styles.label}>Difficulty</div>
+              <SegmentedControl options={TIERS} value={tier} onChange={setTier}/>
+              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{totalAvailable} words available</div>
+            </div>
+            {inputType!=="type" ? <div>
+              <div style={styles.label}>Number of Choices</div>
+              <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
+            </div> : null}
+          </div>
+          {mode==="race" ? <div style={{marginTop:"20px"}}>
+            <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
+            <SegmentedControl options={raceOptions.map(function(n){ return {value:n,label:n===totalAvailable?"All "+n:String(n)}; })} value={raceCount} onChange={setRaceCount}/>
+          </div> : null}
+          {inputType==="type" ? <div style={{marginTop:"20px",padding:"12px 16px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.15)",borderRadius:"2px"}}>
+            <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.purple,marginBottom:"6px"}}>Scoring</div>
+            <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.6"}}>
+              <span style={{color:C.green}}>70-100%</span>{" = Full credit (1 pt)  \u00B7  "}
+              <span style={{color:C.gold}}>40-69%</span>{" = Partial (0.5 pt)  \u00B7  "}
+              <span style={{color:C.red}}>0-39%</span>{" = Miss (burns a life)"}
+            </div>
+          </div> : null}
+        </div>
+        <div style={Object.assign({},styles.card,{marginBottom:"24px"})}>
+          <div style={styles.label}>Players</div>
+          <SegmentedControl options={[1,2,3,4].map(function(n){ return {value:n,label:String(n)}; })} value={playerCount} onChange={function(n){ setPlayerCount(n); setPlayerNames(function(prev){ var next=prev.slice(); while(next.length<n) next.push("Player "+(next.length+1)); return next.slice(0,n); }); }}/>
+          <div style={{display:"flex",gap:"8px",marginTop:"12px",flexWrap:"wrap"}}>
+            {Array.from({length:playerCount}).map(function(_,i){
+              return <input key={i} style={Object.assign({},styles.input,{fontSize:"13px",flex:"1 1 120px",minWidth:"0"})} value={playerNames[i]||""} onChange={function(e){ var next=playerNames.slice(); next[i]=e.target.value; setPlayerNames(next); }} placeholder={"Player "+(i+1)}/>;
+            })}
+          </div>
+        </div>
+        <button style={styles.btn} onClick={startGame} onMouseEnter={function(e){e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Start Game</button>
+      </div>
+    );
+  }
+
+  // ══════ PLAYING ══════
+  if(screen==="playing"){
+    var progress = mode==="race" ? (qIndex+1)+" / "+questions.length : inputType==="type" ? points+" pts" : points+" correct";
+    var inputBorderColor = "#333";
+    if(answered) inputBorderColor = scoreTier(answered.score).color;
+    else if(judging) inputBorderColor = C.purple;
+
+    return(
+      <div style={styles.app}>{fontLink}{pulseCSS}
+        <div style={{width:"100%",maxWidth:"680px",display:"flex",justifyContent:"flex-end",marginBottom:"8px"}}>
+          <button onClick={exitGame} style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"6px 14px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"}}
+            onMouseEnter={function(e){e.target.style.borderColor=C.red;e.target.style.color=C.red}}
+            onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>Exit</button>
+        </div>
+        {playerCount>1 ? <div style={Object.assign({},styles.label,{marginBottom:"12px",color:C.textMuted})}>{playerNames[currentPlayerIdx]}</div> : null}
+        <Timer running={timerRunning} onTick={function(t){timeRef.current=t}} resetKey={timerKey}/>
+        {mode==="survival" ? <div style={{display:"flex",gap:"6px",justifyContent:"center",marginBottom:"8px"}}>
+          {[0,1,2].map(function(i){ return <div key={i} style={{width:"10px",height:"10px",borderRadius:"50%",background:i<mistakes?C.red:"#1e1e22",border:"1px solid "+C.inputBorder,transition:"background 0.3s"}}/>; })}
+        </div> : null}
+        <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"24px",marginTop:"4px"}}>
+          <span style={{fontSize:"12px",color:C.textMuted,letterSpacing:"2px"}}>{progress}</span>
+          {streak>1 ? <span style={{fontSize:"11px",color:C.green,letterSpacing:"1px",padding:"3px 10px",background:C.greenBg,borderRadius:"2px"}}>{streak} streak</span> : null}
+          {inputType==="type" ? <span style={{fontSize:"10px",color:C.purple,letterSpacing:"1px",padding:"3px 10px",background:C.purpleBg,borderRadius:"2px"}}>AI Scored</span> : null}
+        </div>
+        {gameOver ? (
+          <div style={Object.assign({},styles.card,{textAlign:"center",padding:"48px"})}>
+            <div style={{fontSize:"18px",fontWeight:100,color:C.white,marginBottom:"8px"}}>{mode==="survival"&&mistakes>=3?"Game Over":"Complete"}</div>
+            <div style={{fontSize:"13px",color:C.textDim}}>Loading results...</div>
+          </div>
+        ) : currentQ ? (
+          <div style={Object.assign({},styles.card,{textAlign:"center"})}>
+            {/* ── PROMPT AREA: word (choice/type) or definition (reverse) ── */}
+            {inputType==="reverse" ? (
+              <div style={{marginBottom:"24px"}}>
+                <div style={{fontSize:"10px",letterSpacing:"3px",textTransform:"uppercase",color:C.textDim,marginBottom:"10px"}}>{posLabel(currentQ.word.pos)}</div>
+                <div style={{fontSize:"18px",fontWeight:300,color:C.white,lineHeight:"1.5",marginBottom:"12px"}}>{currentQ.word.d}</div>
+                <span style={{fontSize:"9px",letterSpacing:"2px",textTransform:"uppercase",padding:"3px 10px",borderRadius:"2px",
+                  background:currentQ.word.t==="easy"?C.greenBg:currentQ.word.t==="med"?C.goldBg:C.redBg,
+                  color:currentQ.word.t==="easy"?C.green:currentQ.word.t==="med"?C.gold:C.red,
+                }}>{currentQ.word.t==="med"?"Medium":currentQ.word.t}</span>
+              </div>
+            ) : (
+              <div>
+                <div style={{marginBottom:"8px"}}>
+                  <div style={{fontSize:"36px",fontWeight:100,letterSpacing:"2px",color:C.white,marginBottom:"6px"}}>{currentQ.word.w}</div>
+                  <div style={{fontSize:"10px",letterSpacing:"3px",textTransform:"uppercase",color:C.textDim}}>{posLabel(currentQ.word.pos)}</div>
+                </div>
+                <div style={{marginBottom:"24px"}}>
+                  <span style={{fontSize:"9px",letterSpacing:"2px",textTransform:"uppercase",padding:"3px 10px",borderRadius:"2px",
+                    background:currentQ.word.t==="easy"?C.greenBg:currentQ.word.t==="med"?C.goldBg:C.redBg,
+                    color:currentQ.word.t==="easy"?C.green:currentQ.word.t==="med"?C.gold:C.red,
+                  }}>{currentQ.word.t==="med"?"Medium":currentQ.word.t}</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── ANSWER AREA ── */}
+            {inputType==="choice" ? (
+              <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                {currentQ.options.map(function(opt,idx){
+                  var bg="#18181c", border=C.inputBorder, color=C.text, opacity=1;
+                  if(answered){
+                    if(opt.w===currentQ.word.w){bg=C.greenBg;border=C.green;color=C.green;}
+                    else{opacity=0.4;}
+                  }
+                  return <button key={opt.w} onClick={function(){handleChoiceAnswer(opt.w)}} disabled={!!answered}
+                    style={Object.assign({},styles.choiceBtn,{background:bg,borderColor:border,color:color,opacity:opacity})}
+                    onMouseEnter={function(e){if(!answered)e.target.style.borderColor="#444"}}
+                    onMouseLeave={function(e){if(!answered)e.target.style.borderColor=C.inputBorder}}>
+                    <span style={{fontSize:"11px",fontWeight:400,color:C.textDim,marginRight:"10px",letterSpacing:"1px"}}>{String.fromCharCode(65+idx)}</span>{opt.d}
+                  </button>;
+                })}
+              </div>
+            ) : inputType==="reverse" ? (
+              <div style={{display:"flex",gap:"10px",flexWrap:"wrap",justifyContent:"center"}}>
+                {currentQ.options.map(function(opt){
+                  var bg="#18181c", border=C.inputBorder, color=C.text, opacity=1;
+                  if(answered){
+                    if(opt.w===currentQ.word.w){bg=C.greenBg;border=C.green;color=C.green;}
+                    else{opacity=0.4;}
+                  }
+                  return <button key={opt.w} onClick={function(){handleChoiceAnswer(opt.w)}} disabled={!!answered}
+                    style={{flex:"1 1 calc(50% - 6px)",minWidth:"120px",background:bg,border:"1px solid "+border,color:color,opacity:opacity,
+                      padding:"14px 12px",fontSize:"16px",fontFamily:"'Roboto', sans-serif",fontWeight:300,cursor:"pointer",borderRadius:"2px",
+                      textAlign:"center",transition:"all 0.15s",letterSpacing:"1px"}}
+                    onMouseEnter={function(e){if(!answered)e.target.style.borderColor="#444"}}
+                    onMouseLeave={function(e){if(!answered)e.target.style.borderColor=C.inputBorder}}>
+                    {opt.w}
+                  </button>;
+                })}
+              </div>
+            ) : (
+              <div>
+                <input ref={inputRef} style={Object.assign({},styles.input,{fontSize:"16px",textAlign:"left",borderBottomColor:inputBorderColor})}
+                  value={typedAnswer} onChange={function(e){setTypedAnswer(e.target.value)}} onKeyDown={handleTypeKeyDown}
+                  placeholder="Type your definition..." autoFocus disabled={!!answered||judging}/>
+                {!answered && !judging ? <button onClick={handleTypedSubmit} disabled={!typedAnswer.trim()}
+                  style={Object.assign({},styles.btn,{marginTop:"12px",width:"100%",opacity:typedAnswer.trim()?1:0.4,fontSize:"11px"})}
+                  onMouseEnter={function(e){if(typedAnswer.trim())e.target.style.background="#909096"}}
+                  onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Submit</button> : null}
+                {judging ? <div style={{marginTop:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px"}}>
+                  <div style={{display:"flex",gap:"4px"}}>{[0,1,2].map(function(i){return <div key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:C.purple,animation:"pulse 1.2s ease-in-out infinite",animationDelay:i*0.2+"s"}}/>;})}</div>
+                  <span style={{fontSize:"12px",color:C.purple,letterSpacing:"1px"}}>AI is scoring...</span>
+                </div> : null}
+                {answered ? <FeedbackCard answered={answered} word={currentQ.word}/> : null}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  // ══════ TRANSITION ══════
+  if(screen==="transition"){
+    return(
+      <div style={styles.app}>{fontLink}
+        <div style={Object.assign({},styles.card,{textAlign:"center",padding:"60px 32px"})}>
+          <div style={{fontSize:"12px",color:C.textMuted,letterSpacing:"3px",textTransform:"uppercase",marginBottom:"24px"}}>Next Up</div>
+          <div style={{fontSize:"32px",fontWeight:100,color:C.white,marginBottom:"8px"}}>{playerNames[currentPlayerIdx+1]}</div>
+          <div style={{fontSize:"13px",color:C.textDim,marginBottom:"40px"}}>Pass the device. No peeking.</div>
+          <button style={styles.btn} onClick={nextPlayer} onMouseEnter={function(e){e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Ready</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════ RESULTS ══════
+  if(screen==="results"){
+    var sorted = results.slice().sort(function(a,b){
+      if(mode==="race"){if(b.points!==a.points) return b.points-a.points; return a.time-b.time;}
+      if(b.points!==a.points) return b.points-a.points;
+      return b.bestStreak-a.bestStreak;
+    });
+    var winner = sorted[0];
+    var perfect = mode==="race" && winner && winner.mistakes===0 && !winner.exited && winner.points>=raceCount;
+    var isTyped = inputType==="type";
+
+    return(
+      <div style={styles.app}>{fontLink}
+        {perfect ? <div style={{background:C.goldBg,border:"1px solid rgba(212,168,67,0.2)",borderRadius:"2px",padding:"20px 32px",marginBottom:"24px",textAlign:"center",maxWidth:"680px",width:"100%"}}>
+          <div style={{fontSize:"10px",letterSpacing:"6px",color:"rgba(212,168,67,0.6)",textTransform:"uppercase",marginBottom:"6px"}}>Achievement Unlocked</div>
+          <div style={{fontSize:"22px",fontWeight:100,color:C.gold,letterSpacing:"4px"}}>{isTyped?"ETYMOLOGIST":"LEXICOGRAPHER"}</div>
+          <div style={{fontSize:"11px",color:C.textMuted,marginTop:"4px"}}>{"All "+raceCount+" words \u2014 zero mistakes"+(isTyped?" \u2014 AI scored":"")}</div>
+        </div> : null}
+        <div style={styles.title}>Results</div>
+        <div style={Object.assign({},styles.subtitle,{marginBottom:"24px"})}>
+          {(mode==="race"?"Race \u2014 "+raceCount+" words":"Survival \u2014 3 strikes")+" \u00B7 "+(tier==="all"?"All levels":tier==="med"?"Medium":tier.charAt(0).toUpperCase()+tier.slice(1))+" \u00B7 "+(inputType==="type"?"Typed (AI Scored)":inputType==="reverse"?"Def \u2192 Word":numChoices+" choices")}
+        </div>
+        {sorted.map(function(r,i){
+          var fullCount = r.wordLog.filter(function(w){return w.tier==="full"}).length;
+          var partialCount = r.wordLog.filter(function(w){return w.tier==="partial"}).length;
+          var missCount = r.wordLog.filter(function(w){return w.tier==="miss"}).length;
+          return(
+            <div key={i} style={Object.assign({},styles.card,{marginBottom:"12px",borderLeft:i===0&&playerCount>1?"2px solid "+C.accent:"1px solid "+C.cardBorder})}>
+              {playerCount>1 ? <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"12px"}}>
+                <span style={{fontSize:"16px",fontWeight:400,color:C.white}}>{r.player}</span>
+                {i===0&&!r.exited ? <span style={{fontSize:"10px",letterSpacing:"2px",color:C.gold,textTransform:"uppercase"}}>Winner</span> : null}
+                {r.exited ? <span style={{fontSize:"10px",letterSpacing:"2px",color:C.textDim,textTransform:"uppercase"}}>Exited</span> : null}
+              </div> : null}
+              {playerCount<=1&&r.exited ? <div style={{fontSize:"10px",letterSpacing:"2px",color:C.textDim,textTransform:"uppercase",marginBottom:"12px"}}>Exited early</div> : null}
+              <div style={{textAlign:"center",marginBottom:"20px"}}>
+                <div style={styles.label}>Time</div>
+                <div style={{fontFamily:"'Roboto Mono', monospace",fontSize:"36px",fontWeight:100,color:C.white}}>{fmtTime(r.time)}</div>
+              </div>
+              {isTyped ? (
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-around",textAlign:"center",marginBottom:"16px"}}>
+                    <div><div style={styles.label}>Points</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.points}</div></div>
+                    <div><div style={styles.label}>Avg Score</div><div style={{fontSize:"28px",fontWeight:100,color:r.avgScore>=70?C.green:r.avgScore>=40?C.gold:C.red}}>{r.avgScore}%</div></div>
+                    <div><div style={styles.label}>Best Streak</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.bestStreak}</div></div>
+                  </div>
+                  <div style={{display:"flex",gap:"8px",justifyContent:"center",marginBottom:"4px"}}>
+                    <span style={{fontSize:"11px",color:C.green}}>{fullCount} full</span>
+                    <span style={{fontSize:"11px",color:C.textDim}}>{"\u00B7"}</span>
+                    <span style={{fontSize:"11px",color:C.gold}}>{partialCount} partial</span>
+                    <span style={{fontSize:"11px",color:C.textDim}}>{"\u00B7"}</span>
+                    <span style={{fontSize:"11px",color:C.red}}>{missCount} missed</span>
+                  </div>
+                </div>
+              ) : (
+                <div style={{display:"flex",justifyContent:"space-around",textAlign:"center"}}>
+                  <div><div style={styles.label}>Correct</div><div style={{fontSize:"28px",fontWeight:100,color:C.green}}>{fullCount}</div></div>
+                  <div><div style={styles.label}>Mistakes</div><div style={{fontSize:"28px",fontWeight:100,color:r.mistakes>0?C.red:C.textDim}}>{r.mistakes}</div></div>
+                  <div><div style={styles.label}>Best Streak</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.bestStreak}</div></div>
+                </div>
+              )}
+              {isTyped && r.wordLog.length>0 ? (
+                <div style={{marginTop:"20px",borderTop:"1px solid "+C.cardBorder,paddingTop:"16px"}}>
+                  <div style={Object.assign({},styles.label,{marginBottom:"12px"})}>Word-by-Word Breakdown</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                    {r.wordLog.map(function(wl,j){
+                      var t = scoreTier(wl.score);
+                      return(
+                        <div key={j} style={{padding:"8px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                            <span style={{fontSize:"14px",fontWeight:400,color:C.white}}>{wl.w}</span>
+                            <span style={{fontSize:"13px",fontWeight:400,color:t.color,fontFamily:"'Roboto Mono', monospace"}}>{wl.score}%</span>
+                          </div>
+                          <ScoreBar score={wl.score} height={4}/>
+                          <div style={{display:"flex",justifyContent:"space-between",marginTop:"4px"}}>
+                            <span style={{fontSize:"10px",color:C.textDim,fontStyle:"italic"}}>{'"'+wl.yourAnswer+'"'}</span>
+                            <span style={{fontSize:"10px",color:C.textDim}}>{wl.d}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+              {!isTyped && r.wordLog.filter(function(w){return w.tier==="miss"}).length>0 ? (
+                <div style={{marginTop:"20px",borderTop:"1px solid "+C.cardBorder,paddingTop:"16px"}}>
+                  <div style={Object.assign({},styles.label,{marginBottom:"12px"})}>Missed Words</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                    {r.wordLog.filter(function(w){return w.tier==="miss"}).map(function(mw,j){
+                      return <div key={j} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                        <span style={{fontSize:"14px",fontWeight:400,color:C.white}}>{mw.w}</span>
+                        <span style={{fontSize:"11px",color:C.textDim,textAlign:"right",maxWidth:"60%",lineHeight:"1.3"}}>{mw.d}</span>
+                      </div>;
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+        <div style={{display:"flex",gap:"12px",marginTop:"20px"}}>
+          <button style={styles.btn} onClick={resetAll} onMouseEnter={function(e){e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>New Game</button>
+          <button style={styles.btnOutline} onClick={function(){setResults([]);setCurrentPlayerIdx(0);startPlayerRound();}}
+            onMouseEnter={function(e){e.target.style.borderColor="#444"}} onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder}}>Rematch</button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
