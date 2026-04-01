@@ -201,9 +201,40 @@ const WORDS = [
   {w:"Vituperative",d:"Bitter and abusive in language",pos:"adj",t:"hard"},
   {w:"Atavistic",d:"Relating to reversion to an ancestral type",pos:"adj",t:"hard"},
   {w:"Circumlocution",d:"Using many words where fewer would do",pos:"n",t:"hard"},
+  // ── Flashcard words ──
+  {w:"Evoke",d:"To bring a feeling, memory, or image to mind",pos:"v",t:"cards"},
+  {w:"Evince",d:"To reveal the presence of a quality or feeling",pos:"v",t:"cards"},
+  {w:"Hapless",d:"Unfortunate; having no luck",pos:"adj",t:"cards"},
+  {w:"Hackneyed",d:"Lacking originality; overused and trite",pos:"adj",t:"cards"},
+  {w:"Decree",d:"An official order issued by an authority",pos:"n",t:"cards"},
+  {w:"Decorous",d:"In keeping with good taste and propriety",pos:"adj",t:"cards"},
+  {w:"Constitution",d:"The fundamental principles governing a state or organization",pos:"n",t:"cards"},
+  {w:"Constitute",d:"To be a component or part of something",pos:"v",t:"cards"},
+  {w:"Abscond",d:"To leave hurriedly and secretly to escape",pos:"v",t:"cards"},
+  {w:"Abridge",d:"To shorten without losing the sense",pos:"v",t:"cards"},
+  {w:"Vicarious",d:"Experienced through the feelings of another person",pos:"adj",t:"cards"},
+  {w:"Vex",d:"To make someone feel annoyed or frustrated",pos:"v",t:"cards"},
+  {w:"Flout",d:"To openly disregard a rule or convention",pos:"v",t:"cards"},
+  {w:"Flourish",d:"To grow or develop in a healthy or vigorous way",pos:"v",t:"cards"},
+  {w:"Predecessor",d:"A person who held a position before the current holder",pos:"n",t:"cards"},
+  {w:"Precocious",d:"Unusually advanced or mature at an early age",pos:"adj",t:"cards"},
+  {w:"Bane",d:"A cause of great distress or annoyance",pos:"n",t:"cards"},
+  {w:"Juxtaposition",d:"The act of placing things close together for contrast",pos:"n",t:"cards"},
+  {w:"Just",d:"Based on or behaving according to what is morally right and fair",pos:"adj",t:"cards"},
+  {w:"Complicit",d:"Involved with others in an unlawful or wrong activity",pos:"adj",t:"cards"},
+  {w:"Complement",d:"Something that completes or goes well with something",pos:"n",t:"cards"},
+  {w:"Summit",d:"The highest point of a hill or mountain; a meeting of leaders",pos:"n",t:"cards"},
+  {w:"Impinge",d:"To have an effect, especially a negative one",pos:"v",t:"cards"},
+  {w:"Impetuous",d:"Acting quickly without thought or care",pos:"adj",t:"cards"},
+  {w:"Spurious",d:"Not genuine, authentic, or true; false",pos:"adj",t:"cards"},
+  {w:"Sovereign",d:"A supreme ruler; possessing supreme authority",pos:"n",t:"cards"},
+  {w:"Foresight",d:"The ability to predict what will happen in the future",pos:"n",t:"cards"},
+  {w:"Foreseeable",d:"Able to be predicted or expected",pos:"adj",t:"cards"},
+  {w:"Discern",d:"To perceive or recognize something clearly",pos:"v",t:"cards"},
+  {w:"Disavow",d:"To deny any responsibility or support for",pos:"v",t:"cards"},
 ];
 
-const TIERS = [{value:"all",label:"All"},{value:"easy",label:"Easy"},{value:"med",label:"Medium"},{value:"hard",label:"Hard"}];
+const TIERS = [{value:"all",label:"All"},{value:"cards",label:"Cards"},{value:"easy",label:"Easy"},{value:"med",label:"Medium"},{value:"hard",label:"Hard"}];
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 const posLabel = function(p) { return p==="n"?"noun":p==="v"?"verb":p==="adv"?"adverb":"adjective"; };
 
