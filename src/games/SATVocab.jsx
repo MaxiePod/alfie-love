@@ -506,8 +506,9 @@ function FeedbackCard(props) {
   var userAnswer = props.userAnswer;
   var [learned, setLearned] = useState(false);
   if (!answered || !answered.score && answered.score !== 0) return null;
+  var learnMode = props.learnMode;
   var t = scoreTier(answered.score);
-  var showLearn = answered.score < 70 && userAnswer && userAnswer.trim().length > 0;
+  var showLearn = userAnswer && userAnswer.trim().length > 0 && (learnMode || answered.score < 70);
   var handleLearn = function() {
     saveLearnedDef(word.w, userAnswer.trim());
     setLearned(true);
@@ -535,14 +536,18 @@ function FeedbackCard(props) {
             </div>
           ) : (
             <button onClick={handleLearn} style={{
-              background:C.purpleBg,border:"1px solid rgba(155,142,196,0.25)",color:C.purple,
-              padding:"8px 16px",fontSize:"11px",fontFamily:"'Roboto', sans-serif",fontWeight:400,
+              background:learnMode?"rgba(155,142,196,0.2)":C.purpleBg,
+              border:learnMode?"2px solid rgba(155,142,196,0.5)":"1px solid rgba(155,142,196,0.25)",
+              color:C.purple,
+              padding:learnMode?"12px 16px":"8px 16px",
+              fontSize:learnMode?"13px":"11px",
+              fontFamily:"'Roboto', sans-serif",fontWeight:400,
               letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",
               transition:"all 0.2s",width:"100%",
             }}
-              onMouseEnter={function(e){e.target.style.background="rgba(155,142,196,0.15)"}}
-              onMouseLeave={function(e){e.target.style.background=C.purpleBg}}>
-              {"I was right \u2014 Learn this answer"}
+              onMouseEnter={function(e){e.target.style.background="rgba(155,142,196,0.25)"}}
+              onMouseLeave={function(e){e.target.style.background=learnMode?"rgba(155,142,196,0.2)":C.purpleBg}}>
+              {learnMode ? "\u2714 Learn this answer" : "I was right \u2014 Learn this answer"}
             </button>
           )}
         </div>
@@ -554,6 +559,7 @@ function FeedbackCard(props) {
 export default function SATVocab(){
   var [screen, setScreen] = useState("setup");
   var [mode, setMode] = useState("race");
+  var [learnMode, setLearnMode] = useState(false);
   var [inputType, setInputType] = useState("choice");
   var [tier, setTier] = useState("all");
   var [numChoices, setNumChoices] = useState(4);
@@ -797,6 +803,13 @@ export default function SATVocab(){
             })}
           </div>
         </div>
+        <div style={{marginBottom:"20px",display:"flex",alignItems:"center",gap:"10px",cursor:"pointer"}} onClick={function(){ setLearnMode(!learnMode); }}>
+          <div style={{width:"32px",height:"18px",borderRadius:"9px",background:learnMode?"rgba(155,142,196,0.3)":"#1e1e22",border:"1px solid "+(learnMode?"rgba(155,142,196,0.4)":C.inputBorder),position:"relative",transition:"all 0.2s"}}>
+            <div style={{width:"14px",height:"14px",borderRadius:"50%",background:learnMode?C.purple:C.textDim,position:"absolute",top:"1px",left:learnMode?"15px":"1px",transition:"all 0.2s"}}/>
+          </div>
+          <span style={{fontSize:"11px",letterSpacing:"2px",textTransform:"uppercase",color:learnMode?C.purple:C.textDim}}>Learn Mode</span>
+          {learnMode ? <span style={{fontSize:"10px",color:C.textDim}}>— teach the scorer your definitions</span> : null}
+        </div>
         <button style={styles.btn} onClick={startGame} onMouseEnter={function(e){e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Start Game</button>
       </div>
     );
@@ -825,6 +838,7 @@ export default function SATVocab(){
           <span style={{fontSize:"12px",color:C.textMuted,letterSpacing:"2px"}}>{progress}</span>
           {streak>1 ? <span style={{fontSize:"11px",color:C.green,letterSpacing:"1px",padding:"3px 10px",background:C.greenBg,borderRadius:"2px"}}>{streak} streak</span> : null}
           {inputType==="type" ? <span style={{fontSize:"10px",color:C.purple,letterSpacing:"1px",padding:"3px 10px",background:C.purpleBg,borderRadius:"2px"}}>AI Scored</span> : null}
+          {learnMode ? <span style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",padding:"3px 10px",background:C.goldBg,borderRadius:"2px",border:"1px solid rgba(212,168,67,0.2)"}}>Learn Mode</span> : null}
         </div>
         {gameOver ? (
           <div style={Object.assign({},styles.card,{textAlign:"center",padding:"48px"})}>
@@ -906,7 +920,7 @@ export default function SATVocab(){
                   <div style={{display:"flex",gap:"4px"}}>{[0,1,2].map(function(i){return <div key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:C.purple,animation:"pulse 1.2s ease-in-out infinite",animationDelay:i*0.2+"s"}}/>;})}</div>
                   <span style={{fontSize:"12px",color:C.purple,letterSpacing:"1px"}}>AI is scoring...</span>
                 </div> : null}
-                {answered ? <FeedbackCard answered={answered} word={currentQ.word} userAnswer={typedAnswer}/> : null}
+                {answered ? <FeedbackCard answered={answered} word={currentQ.word} userAnswer={typedAnswer} learnMode={learnMode}/> : null}
               </div>
             )}
           </div>

@@ -5,7 +5,7 @@ import Games from './pages/Games';
 import Blog from './pages/Blog';
 import LexiconPage from './pages/LexiconPage';
 
-export const APP_VERSION = 'v1.1.2';
+export const APP_VERSION = 'v1.2.0';
 
 function App() {
   return (
