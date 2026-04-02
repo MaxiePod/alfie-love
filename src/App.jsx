@@ -4,8 +4,9 @@ import Home from './pages/Home';
 import Games from './pages/Games';
 import Blog from './pages/Blog';
 import LexiconPage from './pages/LexiconPage';
+import VexillumPage from './pages/VexillumPage';
 
-export const APP_VERSION = 'v1.2.1';
+export const APP_VERSION = 'v1.3.0';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/games" element={<Games />} />
         <Route path="/games/lexicon" element={<LexiconPage />} />
+        <Route path="/games/vexillum" element={<VexillumPage />} />
         <Route path="/blog" element={<Blog />} />
       </Routes>
     </Layout>

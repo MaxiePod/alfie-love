@@ -8,6 +8,12 @@ const games = [
     description: 'SAT vocabulary challenge — race, survival, or AI-scored typing mode',
     tags: ['Vocabulary', 'SAT Prep', 'Multiplayer'],
   },
+  {
+    slug: 'vexillum',
+    title: 'Vexillum',
+    description: 'Guess the flag — 245 countries & territories, multiple choice or type',
+    tags: ['Geography', 'Flags', 'Multiplayer'],
+  },
 ];
 
 export default function Games() {
