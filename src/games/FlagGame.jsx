@@ -110,17 +110,47 @@ const SCOPES = [
 const codeToFlag = (code) =>
   [...code.toUpperCase()].map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join("");
 
+// Detect if platform supports flag emoji (Windows doesn't)
+const supportsFlags = (() => {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 20; canvas.height = 20;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, 20, 20);
+    ctx.font = "16px sans-serif"; ctx.fillText(codeToFlag("us"), 0, 16);
+    const data = ctx.getImageData(0, 0, 20, 20).data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] > 10 || data[i + 2] > 10) return true; // Found color = flag rendered
+    }
+    return false;
+  } catch(e) { return false; }
+})();
+
 function FlagDisplay({ code, size = 160, style = {} }) {
-  const emoji = codeToFlag(code);
+  if (supportsFlags) {
+    return (
+      <span style={{
+        fontSize: size * 0.75,
+        lineHeight: 1,
+        display: "inline-block",
+        ...style,
+      }}>
+        {codeToFlag(code)}
+      </span>
+    );
+  }
   return (
-    <span style={{
-      fontSize: size * 0.75,
-      lineHeight: 1,
-      display: "inline-block",
-      ...style,
-    }}>
-      {emoji}
-    </span>
+    <img
+      src={`https://flagcdn.com/w640/${code.toLowerCase()}.png`}
+      alt={code}
+      style={{
+        width: size,
+        height: "auto",
+        borderRadius: "2px",
+        display: "inline-block",
+        ...style,
+      }}
+    />
   );
 }
 

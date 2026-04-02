@@ -6,7 +6,7 @@ import Blog from './pages/Blog';
 import LexiconPage from './pages/LexiconPage';
 import VexillumPage from './pages/VexillumPage';
 
-export const APP_VERSION = 'v1.3.0';
+export const APP_VERSION = 'v1.3.1';
 
 function App() {
   return (
