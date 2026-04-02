@@ -548,7 +548,7 @@ function FeedbackCard(props) {
   if (!answered || !answered.score && answered.score !== 0) return null;
   var learnMode = props.learnMode;
   var t = scoreTier(answered.score);
-  var showLearn = userAnswer && userAnswer.trim().length > 0 && (learnMode || answered.score < 70);
+  var showLearn = learnMode && userAnswer && userAnswer.trim().length > 0;
   var handleLearn = function() {
     saveLearnedDef(word.w, userAnswer.trim());
     setLearned(true);
