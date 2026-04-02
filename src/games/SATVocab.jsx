@@ -297,15 +297,39 @@ function offlineJudge(wordEntry, userAnswer) {
   var synonyms = (wordEntry.syn || []).map(normalizeWord);
   var uaWords = ua.split(/\s+/);
 
-  // 0. Check against user-learned definitions first
+  // 0. Check against user-learned definitions first (with stem matching)
   var learned = getLearnedDefs(wordEntry.w);
   for (var ld = 0; ld < learned.length; ld++) {
     var learnedNorm = normalizeWord(learned[ld]);
-    var learnedSim = wordSetSimilarity(ua, learnedNorm);
-    if (ua === learnedNorm || learnedSim >= 0.5) {
+    // Exact match
+    if (ua === learnedNorm) {
       return { score: 90, note: "Matches your learned definition" };
     }
-    // Check if user answer is contained in or contains the learned def
+    // Word-set similarity (handles extra/missing articles, reordering)
+    var learnedSim = wordSetSimilarity(ua, learnedNorm);
+    if (learnedSim >= 0.4) {
+      return { score: 90, note: "Matches your learned definition" };
+    }
+    // Stem-based: check if core stems of learned def appear in user answer
+    var learnedWords = learnedNorm.split(/\s+/).filter(function(w) { return w.length > 2; });
+    var learnedStems = learnedWords.filter(function(w) { return w.length > 3; }).map(stemWord);
+    var uaStemsL = uaWords.filter(function(w) { return w.length > 3; }).map(stemWord);
+    if (learnedStems.length > 0) {
+      var stemMatches = 0;
+      for (var ls = 0; ls < learnedStems.length; ls++) {
+        for (var us = 0; us < uaStemsL.length; us++) {
+          if (learnedStems[ls] === uaStemsL[us] || (learnedStems[ls].length > 2 && uaStemsL[us].length > 2 && (learnedStems[ls].startsWith(uaStemsL[us]) || uaStemsL[us].startsWith(learnedStems[ls])))) {
+            stemMatches++;
+            break;
+          }
+        }
+      }
+      var stemRatio = stemMatches / learnedStems.length;
+      if (stemRatio >= 0.5) {
+        return { score: 85, note: "Matches your learned definition" };
+      }
+    }
+    // Containment check (handles "ruling" learned, user types "a ruling")
     if (ua.includes(learnedNorm) || learnedNorm.includes(ua)) {
       return { score: 85, note: "Matches your learned definition" };
     }
