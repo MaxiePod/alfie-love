@@ -295,133 +295,173 @@ function offlineJudge(wordEntry, userAnswer) {
   var ua = normalizeWord(userAnswer);
   var def = normalizeWord(wordEntry.d);
   var synonyms = (wordEntry.syn || []).map(normalizeWord);
-  var uaWords = ua.split(/\s+/);
+  var uaWords = ua.split(/\s+/).filter(function(w) { return w.length > 0; });
 
-  // 0. Check against user-learned definitions first (with stem matching)
-  var learned = getLearnedDefs(wordEntry.w);
-  for (var ld = 0; ld < learned.length; ld++) {
-    var learnedNorm = normalizeWord(learned[ld]);
-    // Exact match
-    if (ua === learnedNorm) {
-      return { score: 90, note: "Matches your learned definition" };
-    }
-    // Word-set similarity (handles extra/missing articles, reordering)
-    var learnedSim = wordSetSimilarity(ua, learnedNorm);
-    if (learnedSim >= 0.4) {
-      return { score: 90, note: "Matches your learned definition" };
-    }
-    // Stem-based: check if core stems of learned def appear in user answer
-    var learnedWords = learnedNorm.split(/\s+/).filter(function(w) { return w.length > 2; });
-    var learnedStems = learnedWords.filter(function(w) { return w.length > 3; }).map(stemWord);
-    var uaStemsL = uaWords.filter(function(w) { return w.length > 3; }).map(stemWord);
-    if (learnedStems.length > 0) {
-      var stemMatches = 0;
-      for (var ls = 0; ls < learnedStems.length; ls++) {
-        for (var us = 0; us < uaStemsL.length; us++) {
-          if (learnedStems[ls] === uaStemsL[us] || (learnedStems[ls].length > 2 && uaStemsL[us].length > 2 && (learnedStems[ls].startsWith(uaStemsL[us]) || uaStemsL[us].startsWith(learnedStems[ls])))) {
-            stemMatches++;
-            break;
-          }
-        }
-      }
-      var stemRatio = stemMatches / learnedStems.length;
-      if (stemRatio >= 0.5) {
-        return { score: 85, note: "Matches your learned definition" };
-      }
-    }
-    // Containment check (handles "ruling" learned, user types "a ruling")
-    if (ua.includes(learnedNorm) || learnedNorm.includes(ua)) {
-      return { score: 85, note: "Matches your learned definition" };
-    }
+  // Reject answers too short to be meaningful
+  var meaningfulWords = uaWords.filter(function(w) { return w.length >= 3; });
+  if (ua.length < 3 || meaningfulWords.length === 0) {
+    return { score: 0, note: "Answer too short" };
   }
 
-  // 1. Definition similarity — compare directly against the definition text
-  var defSim = wordSetSimilarity(ua, def);
-  if (defSim >= 0.7) {
-    return { score: 95, note: "Excellent definition" };
-  }
-  if (defSim >= 0.5) {
-    return { score: 85, note: "Great definition" };
-  }
-  if (defSim >= 0.35) {
-    return { score: 75, note: "Good definition" };
+  // Evaluate ALL signals, keep the best — no early returns
+  var bestScore = 0;
+  var bestNote = "No match found";
+  function consider(score, note) {
+    score = Math.round(score);
+    if (score > bestScore) { bestScore = score; bestNote = note; }
   }
 
-  // 2. Exact synonym match
-  if (synonyms.indexOf(ua) !== -1) {
-    return { score: 85, note: "Synonym match" };
-  }
-
-  // 3. Check if user answer contains a synonym or vice versa
-  var synMatch = false;
-  var bestSynOverlap = 0;
-  for (var i = 0; i < synonyms.length; i++) {
-    var syn = synonyms[i];
-    if (ua.includes(syn) || syn.includes(ua)) {
-      synMatch = true;
-      break;
-    }
-    for (var j = 0; j < uaWords.length; j++) {
-      if (uaWords[j].length > 2 && (syn === uaWords[j] || syn.includes(uaWords[j]) || uaWords[j].includes(syn))) {
-        synMatch = true;
-        break;
-      }
-      if (uaWords[j].length > 3 && stemWord(uaWords[j]) === stemWord(syn) && stemWord(uaWords[j]).length > 2) {
-        synMatch = true;
-        break;
-      }
-    }
-    if (synMatch) break;
-
-    var synWords = syn.split(/\s+/);
-    var overlap = 0;
-    for (var k = 0; k < synWords.length; k++) {
-      for (var m = 0; m < uaWords.length; m++) {
-        if (synWords[k].length > 2 && uaWords[m].length > 2 && (synWords[k] === uaWords[m] || stemWord(synWords[k]) === stemWord(uaWords[m]))) {
-          overlap++;
+  // Helper: compute what fraction of words in `source` appear in `target` (precision-like)
+  function wordPrecision(sourceWords, targetWords) {
+    var hits = 0;
+    for (var i = 0; i < sourceWords.length; i++) {
+      for (var j = 0; j < targetWords.length; j++) {
+        if (sourceWords[i] === targetWords[j] ||
+            (sourceWords[i].length > 3 && targetWords[j].length > 3 &&
+             stemWord(sourceWords[i]) === stemWord(targetWords[j]))) {
+          hits++;
           break;
         }
       }
     }
-    if (synWords.length > 1 && overlap >= synWords.length * 0.5) {
-      synMatch = true;
-      break;
+    return sourceWords.length > 0 ? hits / sourceWords.length : 0;
+  }
+
+  // === LEARNED DEFINITIONS ===
+  var learned = getLearnedDefs(wordEntry.w);
+  for (var ld = 0; ld < learned.length; ld++) {
+    var learnedNorm = normalizeWord(learned[ld]);
+    if (ua === learnedNorm) {
+      consider(95, "Matches your learned definition");
+      continue;
     }
-    if (overlap > bestSynOverlap) bestSynOverlap = overlap;
+    // Continuous scoring based on word-set similarity
+    var learnedSim = wordSetSimilarity(ua, learnedNorm);
+    if (learnedSim >= 0.25) {
+      // 0.25→61, 0.5→80, 0.7→90, 1.0→95
+      consider(Math.min(95, 50 + learnedSim * 45), "Matches your learned definition");
+    }
+    // Phrase containment — only when substantial
+    if (learnedNorm.length >= 4) {
+      if (ua.includes(learnedNorm) && learnedNorm.length / ua.length >= 0.5) {
+        consider(88, "Matches your learned definition");
+      } else if (learnedNorm.includes(ua) && ua.length / learnedNorm.length >= 0.6) {
+        consider(82, "Matches your learned definition");
+      }
+    }
   }
 
-  if (synMatch) {
-    return { score: 80, note: "Synonym match" };
+  // === DEFINITION SIMILARITY ===
+  // Blend Jaccard (symmetric overlap) with precision (what % of user's words hit the definition).
+  // This rewards concise correct answers: "great distress" for "a cause of great distress"
+  // gets low Jaccard (2/5) but high precision (2/2 = 1.0).
+  var defWords = def.split(/\s+/).filter(function(w) { return w.length > 2; });
+  var defSim = wordSetSimilarity(ua, def);
+  var precision = wordPrecision(meaningfulWords, defWords);
+  var blended = defSim * 0.4 + precision * 0.6;
+  if (blended >= 0.08) {
+    // Continuous: 0.1→14, 0.3→33, 0.5→51, 0.7→69, 0.85→83, 1.0→97
+    var defScore = Math.min(97, Math.round(blended * 97));
+    var defLabel = defScore >= 85 ? "Excellent definition" :
+                   defScore >= 70 ? "Great definition" :
+                   defScore >= 50 ? "Good definition" : "Partially correct";
+    consider(defScore, defLabel);
   }
 
-  // 4. Stem matches against synonyms
-  var uaStems = uaWords.filter(function(w) { return w.length > 3; }).map(stemWord);
-  var synStems = [];
+  // === SYNONYM MATCHING ===
+  var bestSynOverlap = 0;
+
+  for (var i = 0; i < synonyms.length; i++) {
+    var syn = synonyms[i];
+    var synWordsSplit = syn.split(/\s+/).filter(function(w) { return w.length > 0; });
+    var synMeaningful = synWordsSplit.filter(function(w) { return w.length >= 3; });
+
+    // Exact full match — scale score by word length for granularity
+    // "prodigious" (10) → 92, "fake" (4) → 86, "big" (3) → 85
+    if (ua === syn) {
+      consider(Math.min(92, 82 + Math.min(ua.length, 10)), "Synonym match");
+      continue;
+    }
+
+    // Single-word matching: exact or stem only (NO substrings — this prevents "ash" matching "rash")
+    if (synMeaningful.length === 1) {
+      for (var mw = 0; mw < meaningfulWords.length; mw++) {
+        if (meaningfulWords[mw] === synMeaningful[0]) {
+          // Exact word inside user's answer — "a scourge" matches synonym "scourge"
+          consider(Math.min(90, 80 + Math.min(meaningfulWords[mw].length, 10)), "Synonym match");
+        } else if (meaningfulWords[mw].length >= 4 && synMeaningful[0].length >= 4) {
+          var uwStem = stemWord(meaningfulWords[mw]);
+          var swStem = stemWord(synMeaningful[0]);
+          if (uwStem.length >= 3 && swStem.length >= 3 && uwStem === swStem) {
+            // Stem match — "fabricating" matches "fabricated" — slightly lower than exact
+            consider(Math.min(85, 73 + Math.min(meaningfulWords[mw].length, 12)), "Synonym match");
+          }
+        }
+      }
+    }
+
+    // Multi-word synonym or multi-word answer: use word set similarity
+    if (synWordsSplit.length > 1 || uaWords.length > 1) {
+      var synSim = wordSetSimilarity(ua, syn);
+      if (synSim >= 0.25) {
+        // 0.25→53, 0.5→66, 0.75→79, 1.0→92
+        consider(Math.min(92, Math.round(40 + synSim * 52)), "Synonym match");
+      }
+
+      // Track partial word overlap for weak signal
+      var overlap = 0;
+      for (var k = 0; k < synWordsSplit.length; k++) {
+        for (var m = 0; m < uaWords.length; m++) {
+          if (synWordsSplit[k].length > 2 && uaWords[m].length > 2 &&
+              (synWordsSplit[k] === uaWords[m] ||
+               (synWordsSplit[k].length > 3 && uaWords[m].length > 3 &&
+                stemWord(synWordsSplit[k]) === stemWord(uaWords[m])))) {
+            overlap++;
+            break;
+          }
+        }
+      }
+      if (overlap > bestSynOverlap) bestSynOverlap = overlap;
+    }
+
+    // Phrase containment — only for multi-word phrases where shorter ≥ 40% of longer
+    if (syn.length >= 6 && ua.length >= 6) {
+      if (ua.includes(syn) && syn.length / ua.length >= 0.4) {
+        consider(Math.min(82, Math.round(62 + (syn.length / ua.length) * 20)), "Synonym match");
+      } else if (syn.includes(ua) && ua.length / syn.length >= 0.6) {
+        consider(Math.min(75, Math.round(55 + (ua.length / syn.length) * 20)), "Partial synonym match");
+      }
+    }
+  }
+
+  // === STEM HITS ACROSS ALL SYNONYMS ===
+  var uaStems = meaningfulWords.filter(function(w) { return w.length >= 4; }).map(stemWord).filter(function(s) { return s.length >= 3; });
+  var allSynStems = [];
   for (var s = 0; s < synonyms.length; s++) {
     synonyms[s].split(/\s+/).forEach(function(sw) {
-      if (sw.length > 3) synStems.push(stemWord(sw));
+      if (sw.length >= 4) {
+        var st = stemWord(sw);
+        if (st.length >= 3) allSynStems.push(st);
+      }
     });
   }
-  var stemHits = 0;
-  for (var a = 0; a < uaStems.length; a++) {
-    if (uaStems[a].length > 2 && synStems.indexOf(uaStems[a]) !== -1) stemHits++;
-  }
-  if (stemHits > 0) {
-    var stemScore = Math.min(75, 55 + stemHits * 10);
-    return { score: stemScore, note: "Partial synonym match" };
-  }
-
-  // 5. Weaker definition keyword matching
-  if (defSim >= 0.15) {
-    return { score: Math.min(60, Math.round(defSim * 120)), note: "Partially correct" };
+  if (uaStems.length > 0 && allSynStems.length > 0) {
+    var stemHits = 0;
+    for (var a = 0; a < uaStems.length; a++) {
+      if (allSynStems.indexOf(uaStems[a]) !== -1) stemHits++;
+    }
+    if (stemHits > 0) {
+      var stemRatio = stemHits / uaStems.length;
+      consider(Math.min(75, Math.round(45 + stemHits * 8 + stemRatio * 15)), "Partial synonym match");
+    }
   }
 
-  // 6. Partial synonym overlap
+  // === WEAK SIGNAL: partial synonym word overlap ===
   if (bestSynOverlap > 0) {
-    return { score: 35, note: "Loosely related" };
+    consider(Math.min(40, 20 + bestSynOverlap * 10), "Loosely related");
   }
 
-  return { score: 0, note: "No match found" };
+  return { score: bestScore, note: bestNote };
 }
 
 async function aiJudge(word, correctDef, userAnswer, wordEntry) {
