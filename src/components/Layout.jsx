@@ -45,6 +45,7 @@ export default function Layout({ children }) {
           <div style={{
             display: 'flex',
             gap: '32px',
+            alignItems: 'center',
           }} className="desktop-nav">
             {navItems.map(item => {
               const active = item.path === '/'
@@ -65,6 +66,16 @@ export default function Layout({ children }) {
                 </Link>
               );
             })}
+            <span style={{
+              fontSize: '9px',
+              letterSpacing: '1px',
+              padding: '2px 8px',
+              borderRadius: '2px',
+              background: C.inputBg,
+              border: '1px solid ' + C.inputBorder,
+              color: C.textDim,
+              marginLeft: '8px',
+            }}>{APP_VERSION}</span>
           </div>
 
           {/* Mobile hamburger */}
