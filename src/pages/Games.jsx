@@ -14,6 +14,12 @@ const games = [
     description: 'Guess the flag — 245 countries & territories, multiple choice or type',
     tags: ['Geography', 'Flags', 'Multiplayer'],
   },
+  {
+    slug: 'capitolium',
+    title: 'Capitolium',
+    description: 'Name the capital — 197 countries, multiple choice or type',
+    tags: ['Geography', 'Capitals', 'Multiplayer'],
+  },
 ];
 
 export default function Games() {

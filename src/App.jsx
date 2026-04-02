@@ -5,8 +5,9 @@ import Games from './pages/Games';
 import Blog from './pages/Blog';
 import LexiconPage from './pages/LexiconPage';
 import VexillumPage from './pages/VexillumPage';
+import CapitoliumPage from './pages/CapitoliumPage';
 
-export const APP_VERSION = 'v1.3.1';
+export const APP_VERSION = 'v1.4.0';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/games" element={<Games />} />
         <Route path="/games/lexicon" element={<LexiconPage />} />
         <Route path="/games/vexillum" element={<VexillumPage />} />
+        <Route path="/games/capitolium" element={<CapitoliumPage />} />
         <Route path="/blog" element={<Blog />} />
       </Routes>
     </Layout>
