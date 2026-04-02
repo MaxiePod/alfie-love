@@ -1,237 +1,237 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 const WORDS = [
-  {w:"Benevolent",d:"Well-meaning and kindly",pos:"adj",t:"easy"},
-  {w:"Candid",d:"Truthful and straightforward",pos:"adj",t:"easy"},
-  {w:"Diligent",d:"Showing careful and persistent effort",pos:"adj",t:"easy"},
-  {w:"Eloquent",d:"Fluent or persuasive in speaking",pos:"adj",t:"easy"},
-  {w:"Frugal",d:"Sparing or economical with money",pos:"adj",t:"easy"},
-  {w:"Gratitude",d:"The quality of being thankful",pos:"n",t:"easy"},
-  {w:"Harmony",d:"Agreement or peaceful coexistence",pos:"n",t:"easy"},
-  {w:"Impartial",d:"Treating all rivals or sides equally",pos:"adj",t:"easy"},
-  {w:"Jubilant",d:"Feeling or expressing great happiness",pos:"adj",t:"easy"},
-  {w:"Keen",d:"Eager or enthusiastic",pos:"adj",t:"easy"},
-  {w:"Lament",d:"To express sorrow or grief",pos:"v",t:"easy"},
-  {w:"Modest",d:"Unassuming in estimation of abilities",pos:"adj",t:"easy"},
-  {w:"Novice",d:"A person new to a field or activity",pos:"n",t:"easy"},
-  {w:"Ominous",d:"Giving the impression something bad will happen",pos:"adj",t:"easy"},
-  {w:"Prudent",d:"Acting with care and thought for the future",pos:"adj",t:"easy"},
-  {w:"Resilient",d:"Able to recover quickly from difficulties",pos:"adj",t:"easy"},
-  {w:"Serene",d:"Calm, peaceful, and untroubled",pos:"adj",t:"easy"},
-  {w:"Trivial",d:"Of little value or importance",pos:"adj",t:"easy"},
-  {w:"Vivid",d:"Producing powerful images in the mind",pos:"adj",t:"easy"},
-  {w:"Wary",d:"Feeling cautious about possible dangers",pos:"adj",t:"easy"},
-  {w:"Zeal",d:"Great energy or enthusiasm for a cause",pos:"n",t:"easy"},
-  {w:"Amiable",d:"Having a friendly and pleasant manner",pos:"adj",t:"easy"},
-  {w:"Bliss",d:"Supreme happiness or great joy",pos:"n",t:"easy"},
-  {w:"Concise",d:"Giving information clearly and briefly",pos:"adj",t:"easy"},
-  {w:"Deter",d:"To discourage someone from doing something",pos:"v",t:"easy"},
-  {w:"Elated",d:"Extremely happy and excited",pos:"adj",t:"easy"},
-  {w:"Fickle",d:"Changing frequently in loyalty or affection",pos:"adj",t:"easy"},
-  {w:"Gist",d:"The main point or substance of a matter",pos:"n",t:"easy"},
-  {w:"Hinder",d:"To create difficulties or delay progress",pos:"v",t:"easy"},
-  {w:"Impede",d:"To delay or prevent by obstructing",pos:"v",t:"easy"},
-  {w:"Lucid",d:"Expressed clearly and easy to understand",pos:"adj",t:"easy"},
-  {w:"Mundane",d:"Lacking interest or excitement; dull",pos:"adj",t:"easy"},
-  {w:"Nurture",d:"To care for and encourage growth",pos:"v",t:"easy"},
-  {w:"Obscure",d:"Not well known or hard to understand",pos:"adj",t:"easy"},
-  {w:"Plausible",d:"Seeming reasonable or probable",pos:"adj",t:"easy"},
-  {w:"Robust",d:"Strong, healthy, and vigorous",pos:"adj",t:"easy"},
-  {w:"Subtle",d:"Fine or delicate; not immediately obvious",pos:"adj",t:"easy"},
-  {w:"Thrive",d:"To grow or develop well; to prosper",pos:"v",t:"easy"},
-  {w:"Abate",d:"To become less intense or widespread",pos:"v",t:"easy"},
-  {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"easy"},
-  {w:"Comply",d:"To act in accordance with a wish or command",pos:"v",t:"easy"},
-  {w:"Demean",d:"To cause a loss of dignity and respect",pos:"v",t:"easy"},
-  {w:"Erratic",d:"Not even or regular in pattern",pos:"adj",t:"easy"},
-  {w:"Feasible",d:"Possible to do easily or conveniently",pos:"adj",t:"easy"},
-  {w:"Gullible",d:"Easily persuaded to believe something",pos:"adj",t:"easy"},
-  {w:"Haughty",d:"Arrogantly superior and disdainful",pos:"adj",t:"easy"},
-  {w:"Innate",d:"Inborn; natural rather than learned",pos:"adj",t:"easy"},
-  {w:"Jovial",d:"Cheerful and friendly",pos:"adj",t:"easy"},
-  {w:"Lavish",d:"Sumptuously rich or elaborate",pos:"adj",t:"easy"},
-  {w:"Meager",d:"Lacking in quantity or quality",pos:"adj",t:"easy"},
-  {w:"Notable",d:"Worthy of attention; remarkable",pos:"adj",t:"easy"},
-  {w:"Ample",d:"Enough or more than enough; plentiful",pos:"adj",t:"easy"},
-  {w:"Berate",d:"To scold or criticize someone angrily",pos:"v",t:"easy"},
-  {w:"Candor",d:"The quality of being open and honest",pos:"n",t:"easy"},
-  {w:"Deviate",d:"To depart from an established course",pos:"v",t:"easy"},
-  {w:"Endorse",d:"To declare public approval or support of",pos:"v",t:"easy"},
-  {w:"Futile",d:"Incapable of producing any useful result",pos:"adj",t:"easy"},
-  {w:"Grim",d:"Very serious or gloomy",pos:"adj",t:"easy"},
-  {w:"Hostility",d:"Unfriendly or antagonistic behavior",pos:"n",t:"easy"},
-  {w:"Ironic",d:"Happening opposite to what is expected",pos:"adj",t:"easy"},
-  {w:"Aberration",d:"A departure from what is normal or expected",pos:"n",t:"med"},
-  {w:"Bolster",d:"To support or strengthen",pos:"v",t:"med"},
-  {w:"Cacophony",d:"A harsh discordant mixture of sounds",pos:"n",t:"med"},
-  {w:"Debilitate",d:"To make someone weak or infirm",pos:"v",t:"med"},
-  {w:"Ephemeral",d:"Lasting for a very short time",pos:"adj",t:"med"},
-  {w:"Fervent",d:"Having or displaying passionate intensity",pos:"adj",t:"med"},
-  {w:"Galvanize",d:"To shock or excite into taking action",pos:"v",t:"med"},
-  {w:"Harbinger",d:"A person or thing announcing the approach of another",pos:"n",t:"med"},
-  {w:"Idiosyncrasy",d:"A distinctive or peculiar individual behavior",pos:"n",t:"med"},
-  {w:"Juxtapose",d:"To place close together for contrast",pos:"v",t:"med"},
-  {w:"Kindle",d:"To arouse or inspire an emotion or feeling",pos:"v",t:"med"},
-  {w:"Lethargy",d:"A lack of energy and enthusiasm",pos:"n",t:"med"},
-  {w:"Meticulous",d:"Showing great attention to detail",pos:"adj",t:"med"},
-  {w:"Nonchalant",d:"Appearing casually calm and relaxed",pos:"adj",t:"med"},
-  {w:"Ostentatious",d:"Designed to impress; showy",pos:"adj",t:"med"},
-  {w:"Paradox",d:"A seemingly contradictory statement that may be true",pos:"n",t:"med"},
-  {w:"Quandary",d:"A state of uncertainty or perplexity",pos:"n",t:"med"},
-  {w:"Recluse",d:"A person who lives in seclusion",pos:"n",t:"med"},
-  {w:"Scrutinize",d:"To examine or inspect closely and thoroughly",pos:"v",t:"med"},
-  {w:"Tangible",d:"Clear and definite; able to be touched",pos:"adj",t:"med"},
-  {w:"Ubiquitous",d:"Present, appearing, or found everywhere",pos:"adj",t:"med"},
-  {w:"Vindicate",d:"To clear of accusation or blame",pos:"v",t:"med"},
-  {w:"Wistful",d:"Having a feeling of vague longing",pos:"adj",t:"med"},
-  {w:"Alleviate",d:"To make suffering less severe",pos:"v",t:"med"},
-  {w:"Brevity",d:"Concise and exact use of words",pos:"n",t:"med"},
-  {w:"Complacent",d:"Smug and uncritically satisfied",pos:"adj",t:"med"},
-  {w:"Disparage",d:"To regard as being of little worth",pos:"v",t:"med"},
-  {w:"Fluctuate",d:"To rise and fall irregularly",pos:"v",t:"med"},
-  {w:"Gratuitous",d:"Uncalled for; lacking good reason",pos:"adj",t:"med"},
-  {w:"Hypothesis",d:"A proposed explanation with limited evidence",pos:"n",t:"med"},
-  {w:"Malleable",d:"Easily influenced or shaped",pos:"adj",t:"med"},
-  {w:"Nostalgic",d:"Feeling longing for things of the past",pos:"adj",t:"med"},
-  {w:"Orthodox",d:"Conforming to traditional beliefs or practices",pos:"adj",t:"med"},
-  {w:"Pragmatic",d:"Dealing with things in a practical way",pos:"adj",t:"med"},
-  {w:"Repudiate",d:"To refuse to accept or be associated with",pos:"v",t:"med"},
-  {w:"Superfluous",d:"More than what is needed; unnecessary",pos:"adj",t:"med"},
-  {w:"Tenacious",d:"Holding firmly to something; persistent",pos:"adj",t:"med"},
-  {w:"Verbose",d:"Using or expressed in more words than needed",pos:"adj",t:"med"},
-  {w:"Ambivalent",d:"Having mixed feelings about something",pos:"adj",t:"med"},
-  {w:"Benign",d:"Gentle and kindly; not harmful",pos:"adj",t:"med"},
-  {w:"Catalyst",d:"A person or thing that causes change",pos:"n",t:"med"},
-  {w:"Disdain",d:"A feeling that someone is unworthy of respect",pos:"n",t:"med"},
-  {w:"Exacerbate",d:"To make a problem or situation worse",pos:"v",t:"med"},
-  {w:"Forlorn",d:"Pitifully sad and abandoned or lonely",pos:"adj",t:"med"},
-  {w:"Gregarious",d:"Fond of company; sociable",pos:"adj",t:"med"},
-  {w:"Heresy",d:"Belief or opinion contrary to orthodox doctrine",pos:"n",t:"med"},
-  {w:"Impervious",d:"Unable to be affected or disturbed",pos:"adj",t:"med"},
-  {w:"Languish",d:"To lose or lack vitality; to grow weak",pos:"v",t:"med"},
-  {w:"Mitigate",d:"To make less severe or serious",pos:"v",t:"med"},
-  {w:"Nuance",d:"A subtle difference in meaning or expression",pos:"n",t:"med"},
-  {w:"Preclude",d:"To prevent from happening; to make impossible",pos:"v",t:"med"},
-  {w:"Querulous",d:"Complaining in a whining manner",pos:"adj",t:"med"},
-  {w:"Reverence",d:"Deep respect for someone or something",pos:"n",t:"med"},
-  {w:"Stoic",d:"Enduring pain without showing feelings",pos:"adj",t:"med"},
-  {w:"Transient",d:"Lasting only for a short time",pos:"adj",t:"med"},
-  {w:"Unequivocal",d:"Leaving no doubt; unambiguous",pos:"adj",t:"med"},
-  {w:"Venerate",d:"To regard with great respect",pos:"v",t:"med"},
-  {w:"Aesthetic",d:"Concerned with beauty or art appreciation",pos:"adj",t:"med"},
-  {w:"Conundrum",d:"A confusing and difficult problem or question",pos:"n",t:"med"},
-  {w:"Dogmatic",d:"Inclined to lay down principles as true",pos:"adj",t:"med"},
-  {w:"Empirical",d:"Based on observation rather than theory",pos:"adj",t:"med"},
-  {w:"Frivolous",d:"Not having any serious purpose or value",pos:"adj",t:"med"},
-  {w:"Hedonist",d:"A person who pursues pleasure above all else",pos:"n",t:"med"},
-  {w:"Inquisitive",d:"Curious or inquiring",pos:"adj",t:"med"},
-  {w:"Judiciously",d:"With good judgment or sense",pos:"adv",t:"med"},
-  {w:"Laud",d:"To praise someone or something highly",pos:"v",t:"med"},
-  {w:"Maverick",d:"An independent-minded person",pos:"n",t:"med"},
-  {w:"Negate",d:"To nullify or make ineffective",pos:"v",t:"med"},
-  {w:"Penchant",d:"A strong habitual liking for something",pos:"n",t:"med"},
-  {w:"Refute",d:"To prove a statement or theory to be wrong",pos:"v",t:"med"},
-  {w:"Abnegate",d:"To renounce or reject something",pos:"v",t:"hard"},
-  {w:"Bellicose",d:"Demonstrating aggression and willingness to fight",pos:"adj",t:"hard"},
-  {w:"Capitulate",d:"To cease to resist an opponent; to surrender",pos:"v",t:"hard"},
-  {w:"Deleterious",d:"Causing harm or damage",pos:"adj",t:"hard"},
-  {w:"Enervate",d:"To cause someone to feel drained of energy",pos:"v",t:"hard"},
-  {w:"Fastidious",d:"Very attentive to accuracy and detail",pos:"adj",t:"hard"},
-  {w:"Grandiloquent",d:"Pompous or extravagant in language or style",pos:"adj",t:"hard"},
-  {w:"Hegemony",d:"Dominance of one group over others",pos:"n",t:"hard"},
-  {w:"Iconoclast",d:"A person who attacks cherished beliefs",pos:"n",t:"hard"},
-  {w:"Laconic",d:"Using very few words; terse",pos:"adj",t:"hard"},
-  {w:"Malfeasance",d:"Wrongdoing, especially by a public official",pos:"n",t:"hard"},
-  {w:"Nefarious",d:"Wicked or criminal in nature",pos:"adj",t:"hard"},
-  {w:"Obsequious",d:"Excessively obedient or attentive; servile",pos:"adj",t:"hard"},
-  {w:"Perfunctory",d:"Carried out with little effort or reflection",pos:"adj",t:"hard"},
-  {w:"Recalcitrant",d:"Having an obstinately uncooperative attitude",pos:"adj",t:"hard"},
-  {w:"Sycophant",d:"A person who flatters someone important",pos:"n",t:"hard"},
-  {w:"Truculent",d:"Eager or quick to argue or fight",pos:"adj",t:"hard"},
-  {w:"Unconscionable",d:"Not right or reasonable; excessive",pos:"adj",t:"hard"},
-  {w:"Vacillate",d:"To alternate between opinions; to waver",pos:"v",t:"hard"},
-  {w:"Acrimonious",d:"Angry and bitter in tone or manner",pos:"adj",t:"hard"},
-  {w:"Bombastic",d:"High-sounding language with little meaning",pos:"adj",t:"hard"},
-  {w:"Chicanery",d:"The use of trickery to achieve an end",pos:"n",t:"hard"},
-  {w:"Didactic",d:"Intended to teach a moral lesson",pos:"adj",t:"hard"},
-  {w:"Equivocate",d:"To use ambiguous language to conceal truth",pos:"v",t:"hard"},
-  {w:"Furtive",d:"Attempting to avoid notice; secretive",pos:"adj",t:"hard"},
-  {w:"Hubris",d:"Excessive pride or self-confidence",pos:"n",t:"hard"},
-  {w:"Incorrigible",d:"Not able to be corrected or reformed",pos:"adj",t:"hard"},
-  {w:"Jingoism",d:"Extreme patriotism in aggressive foreign policy",pos:"n",t:"hard"},
-  {w:"Kowtow",d:"To act in an excessively submissive manner",pos:"v",t:"hard"},
-  {w:"Loquacious",d:"Tending to talk a great deal; talkative",pos:"adj",t:"hard"},
-  {w:"Magnanimous",d:"Very generous or forgiving toward rivals",pos:"adj",t:"hard"},
-  {w:"Obfuscate",d:"To render obscure or unclear",pos:"v",t:"hard"},
-  {w:"Pernicious",d:"Having a harmful effect, especially gradually",pos:"adj",t:"hard"},
-  {w:"Reticent",d:"Not revealing thoughts or feelings readily",pos:"adj",t:"hard"},
-  {w:"Sanguine",d:"Optimistic or positive in a difficult situation",pos:"adj",t:"hard"},
-  {w:"Trepidation",d:"A feeling of fear about something that may happen",pos:"n",t:"hard"},
-  {w:"Abrogate",d:"To repeal or do away with formally",pos:"v",t:"hard"},
-  {w:"Churlish",d:"Rude in a mean-spirited and surly way",pos:"adj",t:"hard"},
-  {w:"Diffident",d:"Modest or shy due to a lack of confidence",pos:"adj",t:"hard"},
-  {w:"Ebullient",d:"Cheerful and full of energy",pos:"adj",t:"hard"},
-  {w:"Garrulous",d:"Excessively talkative about trivial things",pos:"adj",t:"hard"},
-  {w:"Harangue",d:"A lengthy and aggressive speech",pos:"n",t:"hard"},
-  {w:"Insipid",d:"Lacking flavor, vigor, or interest",pos:"adj",t:"hard"},
-  {w:"Lugubrious",d:"Looking or sounding sad and dismal",pos:"adj",t:"hard"},
-  {w:"Mendacious",d:"Not telling the truth; lying",pos:"adj",t:"hard"},
-  {w:"Obstreperous",d:"Noisy and difficult to control",pos:"adj",t:"hard"},
-  {w:"Parsimonious",d:"Extremely unwilling to spend money; miserly",pos:"adj",t:"hard"},
-  {w:"Quixotic",d:"Exceedingly idealistic; unrealistic",pos:"adj",t:"hard"},
-  {w:"Recondite",d:"Little known or obscure; abstruse",pos:"adj",t:"hard"},
-  {w:"Sagacious",d:"Having or showing keen discernment and judgment",pos:"adj",t:"hard"},
-  {w:"Temerity",d:"Excessive confidence or boldness; audacity",pos:"n",t:"hard"},
-  {w:"Unctuous",d:"Excessively flattering or ingratiating",pos:"adj",t:"hard"},
-  {w:"Verisimilitude",d:"The appearance of being true or real",pos:"n",t:"hard"},
-  {w:"Winsome",d:"Attractive or appealing in a fresh way",pos:"adj",t:"hard"},
-  {w:"Assiduously",d:"With great care, attention, and effort",pos:"adv",t:"hard"},
-  {w:"Calumny",d:"The making of false statements to damage reputation",pos:"n",t:"hard"},
-  {w:"Desultory",d:"Lacking a plan or purpose; random",pos:"adj",t:"hard"},
-  {w:"Effrontery",d:"Insolent or impertinent behavior",pos:"n",t:"hard"},
-  {w:"Fatuous",d:"Silly and pointless",pos:"adj",t:"hard"},
-  {w:"Ignominious",d:"Deserving or causing public disgrace",pos:"adj",t:"hard"},
-  {w:"Litigious",d:"Tending or too inclined to bring lawsuits",pos:"adj",t:"hard"},
-  {w:"Munificent",d:"Larger or more generous than usual",pos:"adj",t:"hard"},
-  {w:"Opprobrium",d:"Harsh criticism or censure",pos:"n",t:"hard"},
-  {w:"Pusillanimous",d:"Showing a lack of courage; timid",pos:"adj",t:"hard"},
-  {w:"Risible",d:"Relating to laughter; laughable",pos:"adj",t:"hard"},
-  {w:"Specious",d:"Superficially plausible but actually wrong",pos:"adj",t:"hard"},
-  {w:"Tendentious",d:"Expressing a strong opinion; biased",pos:"adj",t:"hard"},
-  {w:"Vituperative",d:"Bitter and abusive in language",pos:"adj",t:"hard"},
-  {w:"Atavistic",d:"Relating to reversion to an ancestral type",pos:"adj",t:"hard"},
-  {w:"Circumlocution",d:"Using many words where fewer would do",pos:"n",t:"hard"},
+  {w:"Benevolent",d:"Well-meaning and kindly",pos:"adj",t:"easy",syn:["kind","generous","charitable","compassionate","caring","good-hearted","altruistic","philanthropic","warm"]},
+  {w:"Candid",d:"Truthful and straightforward",pos:"adj",t:"easy",syn:["honest","frank","direct","open","blunt","sincere","upfront","forthright"]},
+  {w:"Diligent",d:"Showing careful and persistent effort",pos:"adj",t:"easy",syn:["hardworking","industrious","thorough","meticulous","dedicated","conscientious","persistent","tireless"]},
+  {w:"Eloquent",d:"Fluent or persuasive in speaking",pos:"adj",t:"easy",syn:["articulate","well-spoken","expressive","persuasive","fluent","silver-tongued","powerful"]},
+  {w:"Frugal",d:"Sparing or economical with money",pos:"adj",t:"easy",syn:["thrifty","economical","cheap","stingy","penny-pinching","careful","sparing","tight"]},
+  {w:"Gratitude",d:"The quality of being thankful",pos:"n",t:"easy",syn:["thankfulness","appreciation","gratefulness","thanks","recognition"]},
+  {w:"Harmony",d:"Agreement or peaceful coexistence",pos:"n",t:"easy",syn:["peace","accord","agreement","unity","balance","cooperation","concord"]},
+  {w:"Impartial",d:"Treating all rivals or sides equally",pos:"adj",t:"easy",syn:["unbiased","fair","neutral","objective","even-handed","balanced","just","disinterested"]},
+  {w:"Jubilant",d:"Feeling or expressing great happiness",pos:"adj",t:"easy",syn:["joyful","ecstatic","elated","overjoyed","thrilled","happy","exultant","triumphant","delighted"]},
+  {w:"Keen",d:"Eager or enthusiastic",pos:"adj",t:"easy",syn:["eager","enthusiastic","excited","passionate","avid","fervent","zealous","sharp"]},
+  {w:"Lament",d:"To express sorrow or grief",pos:"v",t:"easy",syn:["mourn","grieve","weep","cry","bewail","bemoan","sorrow","wail"]},
+  {w:"Modest",d:"Unassuming in estimation of abilities",pos:"adj",t:"easy",syn:["humble","unassuming","unpretentious","reserved","shy","meek","self-effacing"]},
+  {w:"Novice",d:"A person new to a field or activity",pos:"n",t:"easy",syn:["beginner","newcomer","amateur","rookie","newbie","learner","apprentice","neophyte"]},
+  {w:"Ominous",d:"Giving the impression something bad will happen",pos:"adj",t:"easy",syn:["threatening","menacing","sinister","foreboding","dark","gloomy","dire","portentous"]},
+  {w:"Prudent",d:"Acting with care and thought for the future",pos:"adj",t:"easy",syn:["careful","cautious","wise","sensible","judicious","shrewd","thoughtful","circumspect"]},
+  {w:"Resilient",d:"Able to recover quickly from difficulties",pos:"adj",t:"easy",syn:["tough","strong","hardy","adaptable","flexible","bouncing back","durable","sturdy"]},
+  {w:"Serene",d:"Calm, peaceful, and untroubled",pos:"adj",t:"easy",syn:["calm","peaceful","tranquil","placid","quiet","relaxed","composed","still"]},
+  {w:"Trivial",d:"Of little value or importance",pos:"adj",t:"easy",syn:["unimportant","insignificant","minor","petty","small","trifling","negligible","meaningless"]},
+  {w:"Vivid",d:"Producing powerful images in the mind",pos:"adj",t:"easy",syn:["bright","colorful","striking","graphic","clear","intense","vibrant","lifelike"]},
+  {w:"Wary",d:"Feeling cautious about possible dangers",pos:"adj",t:"easy",syn:["cautious","careful","watchful","alert","guarded","suspicious","leery","vigilant"]},
+  {w:"Zeal",d:"Great energy or enthusiasm for a cause",pos:"n",t:"easy",syn:["passion","enthusiasm","fervor","eagerness","devotion","ardor","drive","dedication"]},
+  {w:"Amiable",d:"Having a friendly and pleasant manner",pos:"adj",t:"easy",syn:["friendly","pleasant","likable","agreeable","warm","genial","good-natured","affable"]},
+  {w:"Bliss",d:"Supreme happiness or great joy",pos:"n",t:"easy",syn:["happiness","joy","ecstasy","delight","euphoria","rapture","elation","heaven"]},
+  {w:"Concise",d:"Giving information clearly and briefly",pos:"adj",t:"easy",syn:["brief","short","succinct","terse","compact","to the point","pithy","condensed"]},
+  {w:"Deter",d:"To discourage someone from doing something",pos:"v",t:"easy",syn:["discourage","prevent","dissuade","stop","inhibit","scare off","put off","ward off"]},
+  {w:"Elated",d:"Extremely happy and excited",pos:"adj",t:"easy",syn:["thrilled","overjoyed","ecstatic","jubilant","happy","delighted","euphoric","exhilarated"]},
+  {w:"Fickle",d:"Changing frequently in loyalty or affection",pos:"adj",t:"easy",syn:["changeable","inconsistent","unpredictable","unreliable","capricious","flighty","unstable","volatile"]},
+  {w:"Gist",d:"The main point or substance of a matter",pos:"n",t:"easy",syn:["essence","core","point","crux","gist","summary","substance","heart","nub"]},
+  {w:"Hinder",d:"To create difficulties or delay progress",pos:"v",t:"easy",syn:["obstruct","block","impede","hamper","delay","slow","prevent","hold back","inhibit"]},
+  {w:"Impede",d:"To delay or prevent by obstructing",pos:"v",t:"easy",syn:["hinder","block","obstruct","hamper","slow","delay","prevent","restrict","thwart"]},
+  {w:"Lucid",d:"Expressed clearly and easy to understand",pos:"adj",t:"easy",syn:["clear","understandable","coherent","plain","transparent","intelligible","comprehensible","articulate"]},
+  {w:"Mundane",d:"Lacking interest or excitement; dull",pos:"adj",t:"easy",syn:["boring","dull","ordinary","tedious","humdrum","routine","everyday","unexciting","banal"]},
+  {w:"Nurture",d:"To care for and encourage growth",pos:"v",t:"easy",syn:["care for","nourish","foster","raise","cultivate","support","develop","tend","encourage"]},
+  {w:"Obscure",d:"Not well known or hard to understand",pos:"adj",t:"easy",syn:["unknown","unclear","vague","hidden","mysterious","ambiguous","cryptic","arcane","esoteric"]},
+  {w:"Plausible",d:"Seeming reasonable or probable",pos:"adj",t:"easy",syn:["believable","credible","reasonable","likely","possible","convincing","probable","feasible"]},
+  {w:"Robust",d:"Strong, healthy, and vigorous",pos:"adj",t:"easy",syn:["strong","sturdy","healthy","vigorous","tough","hardy","powerful","solid","muscular"]},
+  {w:"Subtle",d:"Fine or delicate; not immediately obvious",pos:"adj",t:"easy",syn:["slight","faint","delicate","understated","nuanced","fine","indirect","elusive"]},
+  {w:"Thrive",d:"To grow or develop well; to prosper",pos:"v",t:"easy",syn:["flourish","prosper","bloom","succeed","grow","boom","blossom","do well"]},
+  {w:"Abate",d:"To become less intense or widespread",pos:"v",t:"easy",syn:["decrease","diminish","lessen","subside","reduce","weaken","fade","decline","ease"]},
+  {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"easy",syn:["trite","cliche","unoriginal","boring","dull","hackneyed","commonplace","stale","predictable"]},
+  {w:"Comply",d:"To act in accordance with a wish or command",pos:"v",t:"easy",syn:["obey","follow","conform","adhere","submit","agree","abide","respect"]},
+  {w:"Demean",d:"To cause a loss of dignity and respect",pos:"v",t:"easy",syn:["degrade","humiliate","belittle","lower","debase","shame","disgrace","diminish","disrespect"]},
+  {w:"Erratic",d:"Not even or regular in pattern",pos:"adj",t:"easy",syn:["unpredictable","irregular","inconsistent","unstable","random","volatile","unsteady","sporadic"]},
+  {w:"Feasible",d:"Possible to do easily or conveniently",pos:"adj",t:"easy",syn:["possible","doable","practical","achievable","realistic","viable","workable","attainable"]},
+  {w:"Gullible",d:"Easily persuaded to believe something",pos:"adj",t:"easy",syn:["naive","trusting","credulous","innocent","unsuspecting","foolish","impressionable","susceptible"]},
+  {w:"Haughty",d:"Arrogantly superior and disdainful",pos:"adj",t:"easy",syn:["arrogant","proud","snobbish","conceited","condescending","superior","stuck-up","pompous","disdainful"]},
+  {w:"Innate",d:"Inborn; natural rather than learned",pos:"adj",t:"easy",syn:["natural","inborn","inherent","instinctive","native","built-in","intrinsic","congenital"]},
+  {w:"Jovial",d:"Cheerful and friendly",pos:"adj",t:"easy",syn:["cheerful","friendly","jolly","merry","happy","upbeat","good-humored","buoyant","genial"]},
+  {w:"Lavish",d:"Sumptuously rich or elaborate",pos:"adj",t:"easy",syn:["extravagant","luxurious","opulent","generous","elaborate","rich","grand","excessive","plush"]},
+  {w:"Meager",d:"Lacking in quantity or quality",pos:"adj",t:"easy",syn:["scarce","small","insufficient","sparse","poor","paltry","skimpy","thin","scanty"]},
+  {w:"Notable",d:"Worthy of attention; remarkable",pos:"adj",t:"easy",syn:["remarkable","noteworthy","important","significant","famous","distinguished","prominent","outstanding"]},
+  {w:"Ample",d:"Enough or more than enough; plentiful",pos:"adj",t:"easy",syn:["plenty","sufficient","abundant","generous","large","substantial","plentiful","copious"]},
+  {w:"Berate",d:"To scold or criticize someone angrily",pos:"v",t:"easy",syn:["scold","criticize","reprimand","rebuke","chastise","yell at","tell off","upbraid","lambaste"]},
+  {w:"Candor",d:"The quality of being open and honest",pos:"n",t:"easy",syn:["honesty","openness","frankness","sincerity","directness","truthfulness","bluntness","transparency"]},
+  {w:"Deviate",d:"To depart from an established course",pos:"v",t:"easy",syn:["diverge","stray","depart","veer","wander","differ","digress","swerve"]},
+  {w:"Endorse",d:"To declare public approval or support of",pos:"v",t:"easy",syn:["support","approve","back","advocate","recommend","promote","sanction","champion"]},
+  {w:"Futile",d:"Incapable of producing any useful result",pos:"adj",t:"easy",syn:["useless","pointless","hopeless","vain","fruitless","ineffective","unsuccessful","worthless"]},
+  {w:"Grim",d:"Very serious or gloomy",pos:"adj",t:"easy",syn:["serious","gloomy","somber","bleak","dark","stern","grave","harsh","dismal","dreary"]},
+  {w:"Hostility",d:"Unfriendly or antagonistic behavior",pos:"n",t:"easy",syn:["aggression","anger","animosity","antagonism","hatred","enmity","ill will","opposition","malice"]},
+  {w:"Ironic",d:"Happening opposite to what is expected",pos:"adj",t:"easy",syn:["paradoxical","unexpected","contradictory","sardonic","sarcastic","satirical","wry"]},
+  {w:"Aberration",d:"A departure from what is normal or expected",pos:"n",t:"med",syn:["anomaly","deviation","irregularity","oddity","exception","abnormality","freak","quirk"]},
+  {w:"Bolster",d:"To support or strengthen",pos:"v",t:"med",syn:["support","strengthen","reinforce","boost","prop up","shore up","buttress","fortify"]},
+  {w:"Cacophony",d:"A harsh discordant mixture of sounds",pos:"n",t:"med",syn:["noise","din","racket","discord","clamor","dissonance","commotion"]},
+  {w:"Debilitate",d:"To make someone weak or infirm",pos:"v",t:"med",syn:["weaken","enfeeble","exhaust","drain","sap","incapacitate","cripple","impair"]},
+  {w:"Ephemeral",d:"Lasting for a very short time",pos:"adj",t:"med",syn:["fleeting","temporary","brief","short-lived","transient","momentary","passing","transitory"]},
+  {w:"Fervent",d:"Having or displaying passionate intensity",pos:"adj",t:"med",syn:["passionate","intense","zealous","ardent","eager","enthusiastic","fiery","impassioned"]},
+  {w:"Galvanize",d:"To shock or excite into taking action",pos:"v",t:"med",syn:["motivate","inspire","spur","stimulate","energize","rouse","electrify","provoke","catalyze"]},
+  {w:"Harbinger",d:"A person or thing announcing the approach of another",pos:"n",t:"med",syn:["herald","sign","omen","forerunner","precursor","signal","indicator","messenger"]},
+  {w:"Idiosyncrasy",d:"A distinctive or peculiar individual behavior",pos:"n",t:"med",syn:["quirk","peculiarity","eccentricity","oddity","habit","trait","mannerism","characteristic"]},
+  {w:"Juxtapose",d:"To place close together for contrast",pos:"v",t:"med",syn:["compare","contrast","place side by side","set against","pair"]},
+  {w:"Kindle",d:"To arouse or inspire an emotion or feeling",pos:"v",t:"med",syn:["ignite","spark","arouse","inspire","stir","awaken","provoke","stimulate","light"]},
+  {w:"Lethargy",d:"A lack of energy and enthusiasm",pos:"n",t:"med",syn:["tiredness","fatigue","sluggishness","laziness","drowsiness","apathy","inertia","torpor","listlessness"]},
+  {w:"Meticulous",d:"Showing great attention to detail",pos:"adj",t:"med",syn:["careful","thorough","precise","detailed","exacting","painstaking","scrupulous","fastidious"]},
+  {w:"Nonchalant",d:"Appearing casually calm and relaxed",pos:"adj",t:"med",syn:["casual","cool","indifferent","unconcerned","laid-back","carefree","relaxed","unbothered"]},
+  {w:"Ostentatious",d:"Designed to impress; showy",pos:"adj",t:"med",syn:["showy","flashy","gaudy","pretentious","flamboyant","extravagant","garish","pompous","over the top"]},
+  {w:"Paradox",d:"A seemingly contradictory statement that may be true",pos:"n",t:"med",syn:["contradiction","puzzle","enigma","riddle","anomaly","inconsistency","irony","oxymoron"]},
+  {w:"Quandary",d:"A state of uncertainty or perplexity",pos:"n",t:"med",syn:["dilemma","predicament","problem","difficulty","bind","pickle","plight","puzzle","conundrum"]},
+  {w:"Recluse",d:"A person who lives in seclusion",pos:"n",t:"med",syn:["hermit","loner","introvert","isolationist","shut-in","solitary"]},
+  {w:"Scrutinize",d:"To examine or inspect closely and thoroughly",pos:"v",t:"med",syn:["examine","inspect","study","analyze","review","investigate","observe","survey","probe"]},
+  {w:"Tangible",d:"Clear and definite; able to be touched",pos:"adj",t:"med",syn:["physical","real","concrete","solid","palpable","material","touchable","actual","perceptible"]},
+  {w:"Ubiquitous",d:"Present, appearing, or found everywhere",pos:"adj",t:"med",syn:["everywhere","omnipresent","universal","pervasive","widespread","common","prevalent"]},
+  {w:"Vindicate",d:"To clear of accusation or blame",pos:"v",t:"med",syn:["exonerate","clear","absolve","justify","acquit","defend","prove right","support"]},
+  {w:"Wistful",d:"Having a feeling of vague longing",pos:"adj",t:"med",syn:["longing","yearning","nostalgic","pensive","melancholy","dreamy","reflective","sad"]},
+  {w:"Alleviate",d:"To make suffering less severe",pos:"v",t:"med",syn:["relieve","ease","reduce","lessen","soothe","diminish","lighten","mitigate"]},
+  {w:"Brevity",d:"Concise and exact use of words",pos:"n",t:"med",syn:["shortness","briefness","conciseness","succinctness","terseness","economy"]},
+  {w:"Complacent",d:"Smug and uncritically satisfied",pos:"adj",t:"med",syn:["smug","self-satisfied","content","lazy","overconfident","unconcerned","satisfied"]},
+  {w:"Disparage",d:"To regard as being of little worth",pos:"v",t:"med",syn:["belittle","criticize","demean","mock","denigrate","undervalue","diminish","put down","deride"]},
+  {w:"Fluctuate",d:"To rise and fall irregularly",pos:"v",t:"med",syn:["vary","change","shift","oscillate","swing","waver","alternate","seesaw"]},
+  {w:"Gratuitous",d:"Uncalled for; lacking good reason",pos:"adj",t:"med",syn:["unnecessary","unwarranted","unjustified","needless","excessive","unprovoked","baseless","free"]},
+  {w:"Hypothesis",d:"A proposed explanation with limited evidence",pos:"n",t:"med",syn:["theory","guess","assumption","proposition","thesis","conjecture","supposition","speculation"]},
+  {w:"Malleable",d:"Easily influenced or shaped",pos:"adj",t:"med",syn:["flexible","pliable","moldable","adaptable","impressionable","compliant","yielding","soft"]},
+  {w:"Nostalgic",d:"Feeling longing for things of the past",pos:"adj",t:"med",syn:["sentimental","wistful","longing","homesick","reminiscent","yearning"]},
+  {w:"Orthodox",d:"Conforming to traditional beliefs or practices",pos:"adj",t:"med",syn:["traditional","conventional","conservative","standard","established","mainstream","conformist"]},
+  {w:"Pragmatic",d:"Dealing with things in a practical way",pos:"adj",t:"med",syn:["practical","realistic","sensible","logical","down-to-earth","matter-of-fact","rational"]},
+  {w:"Repudiate",d:"To refuse to accept or be associated with",pos:"v",t:"med",syn:["reject","deny","disown","renounce","disavow","refuse","abandon","disclaim"]},
+  {w:"Superfluous",d:"More than what is needed; unnecessary",pos:"adj",t:"med",syn:["unnecessary","excess","extra","redundant","unneeded","surplus","excessive","spare"]},
+  {w:"Tenacious",d:"Holding firmly to something; persistent",pos:"adj",t:"med",syn:["persistent","determined","stubborn","resolute","dogged","relentless","steadfast","unyielding"]},
+  {w:"Verbose",d:"Using or expressed in more words than needed",pos:"adj",t:"med",syn:["wordy","long-winded","rambling","talkative","garrulous","loquacious","prolix","overlong"]},
+  {w:"Ambivalent",d:"Having mixed feelings about something",pos:"adj",t:"med",syn:["uncertain","undecided","torn","conflicted","unsure","hesitant","mixed","indecisive"]},
+  {w:"Benign",d:"Gentle and kindly; not harmful",pos:"adj",t:"med",syn:["harmless","gentle","kind","mild","innocent","safe","nonthreatening","favorable"]},
+  {w:"Catalyst",d:"A person or thing that causes change",pos:"n",t:"med",syn:["trigger","spark","stimulus","cause","driver","impetus","agent","spur"]},
+  {w:"Disdain",d:"A feeling that someone is unworthy of respect",pos:"n",t:"med",syn:["contempt","scorn","disrespect","derision","arrogance","disregard","loathing","sneering"]},
+  {w:"Exacerbate",d:"To make a problem or situation worse",pos:"v",t:"med",syn:["worsen","aggravate","intensify","inflame","escalate","compound","heighten"]},
+  {w:"Forlorn",d:"Pitifully sad and abandoned or lonely",pos:"adj",t:"med",syn:["sad","lonely","miserable","dejected","hopeless","desolate","wretched","despondent","abandoned"]},
+  {w:"Gregarious",d:"Fond of company; sociable",pos:"adj",t:"med",syn:["sociable","outgoing","friendly","social","extroverted","convivial","companionable"]},
+  {w:"Heresy",d:"Belief or opinion contrary to orthodox doctrine",pos:"n",t:"med",syn:["blasphemy","dissent","unorthodoxy","sacrilege","apostasy","nonconformity"]},
+  {w:"Impervious",d:"Unable to be affected or disturbed",pos:"adj",t:"med",syn:["immune","resistant","unaffected","invulnerable","impenetrable","insensitive","proof against"]},
+  {w:"Languish",d:"To lose or lack vitality; to grow weak",pos:"v",t:"med",syn:["weaken","wilt","decline","fade","deteriorate","wither","suffer","stagnate","droop"]},
+  {w:"Mitigate",d:"To make less severe or serious",pos:"v",t:"med",syn:["reduce","lessen","ease","alleviate","diminish","moderate","soften","temper"]},
+  {w:"Nuance",d:"A subtle difference in meaning or expression",pos:"n",t:"med",syn:["subtlety","distinction","shade","refinement","detail","gradation","nicety","variation"]},
+  {w:"Preclude",d:"To prevent from happening; to make impossible",pos:"v",t:"med",syn:["prevent","stop","rule out","exclude","prohibit","block","forestall","bar"]},
+  {w:"Querulous",d:"Complaining in a whining manner",pos:"adj",t:"med",syn:["whiny","complaining","grumbling","petulant","fretful","peevish","cranky","grouchy"]},
+  {w:"Reverence",d:"Deep respect for someone or something",pos:"n",t:"med",syn:["respect","admiration","awe","honor","veneration","devotion","esteem","worship"]},
+  {w:"Stoic",d:"Enduring pain without showing feelings",pos:"adj",t:"med",syn:["unemotional","calm","composed","unflinching","impassive","patient","resigned","unfeeling"]},
+  {w:"Transient",d:"Lasting only for a short time",pos:"adj",t:"med",syn:["temporary","fleeting","brief","short-lived","passing","momentary","ephemeral","impermanent"]},
+  {w:"Unequivocal",d:"Leaving no doubt; unambiguous",pos:"adj",t:"med",syn:["clear","definite","absolute","certain","unmistakable","decisive","unambiguous","explicit"]},
+  {w:"Venerate",d:"To regard with great respect",pos:"v",t:"med",syn:["respect","revere","admire","honor","worship","esteem","idolize","exalt"]},
+  {w:"Aesthetic",d:"Concerned with beauty or art appreciation",pos:"adj",t:"med",syn:["artistic","beautiful","visual","stylistic","decorative","tasteful","pleasing"]},
+  {w:"Conundrum",d:"A confusing and difficult problem or question",pos:"n",t:"med",syn:["puzzle","riddle","mystery","dilemma","enigma","problem","quandary"]},
+  {w:"Dogmatic",d:"Inclined to lay down principles as true",pos:"adj",t:"med",syn:["opinionated","stubborn","rigid","inflexible","authoritarian","assertive","doctrinaire","dictatorial"]},
+  {w:"Empirical",d:"Based on observation rather than theory",pos:"adj",t:"med",syn:["observed","experimental","practical","evidence-based","factual","measured","scientific"]},
+  {w:"Frivolous",d:"Not having any serious purpose or value",pos:"adj",t:"med",syn:["silly","trivial","petty","unimportant","superficial","flippant","lighthearted","pointless"]},
+  {w:"Hedonist",d:"A person who pursues pleasure above all else",pos:"n",t:"med",syn:["pleasure-seeker","sensualist","bon vivant","epicurean","sybarite","indulgent"]},
+  {w:"Inquisitive",d:"Curious or inquiring",pos:"adj",t:"med",syn:["curious","nosy","questioning","probing","inquiring","prying","interested","investigative"]},
+  {w:"Judiciously",d:"With good judgment or sense",pos:"adv",t:"med",syn:["wisely","carefully","sensibly","prudently","shrewdly","thoughtfully","smartly"]},
+  {w:"Laud",d:"To praise someone or something highly",pos:"v",t:"med",syn:["praise","applaud","commend","celebrate","honor","extol","acclaim","glorify","exalt"]},
+  {w:"Maverick",d:"An independent-minded person",pos:"n",t:"med",syn:["rebel","nonconformist","individualist","free spirit","dissenter","loner","renegade"]},
+  {w:"Negate",d:"To nullify or make ineffective",pos:"v",t:"med",syn:["cancel","nullify","void","undo","invalidate","counteract","deny","reverse","neutralize"]},
+  {w:"Penchant",d:"A strong habitual liking for something",pos:"n",t:"med",syn:["fondness","liking","preference","taste","inclination","tendency","affinity","weakness"]},
+  {w:"Refute",d:"To prove a statement or theory to be wrong",pos:"v",t:"med",syn:["disprove","deny","counter","rebut","contradict","debunk","discredit","challenge"]},
+  {w:"Abnegate",d:"To renounce or reject something",pos:"v",t:"hard",syn:["renounce","reject","give up","surrender","abandon","relinquish","deny","forgo","sacrifice"]},
+  {w:"Bellicose",d:"Demonstrating aggression and willingness to fight",pos:"adj",t:"hard",syn:["aggressive","hostile","warlike","combative","belligerent","pugnacious","militant","confrontational"]},
+  {w:"Capitulate",d:"To cease to resist an opponent; to surrender",pos:"v",t:"hard",syn:["surrender","yield","give in","submit","concede","relent","cave","acquiesce"]},
+  {w:"Deleterious",d:"Causing harm or damage",pos:"adj",t:"hard",syn:["harmful","damaging","destructive","detrimental","injurious","bad","toxic","noxious","hurtful"]},
+  {w:"Enervate",d:"To cause someone to feel drained of energy",pos:"v",t:"hard",syn:["exhaust","drain","tire","weaken","fatigue","sap","debilitate","deplete"]},
+  {w:"Fastidious",d:"Very attentive to accuracy and detail",pos:"adj",t:"hard",syn:["meticulous","particular","picky","fussy","finicky","precise","exacting","scrupulous","perfectionist"]},
+  {w:"Grandiloquent",d:"Pompous or extravagant in language or style",pos:"adj",t:"hard",syn:["pompous","bombastic","pretentious","verbose","flowery","overblown","inflated","grandiose"]},
+  {w:"Hegemony",d:"Dominance of one group over others",pos:"n",t:"hard",syn:["dominance","supremacy","control","leadership","authority","power","rule","dominion"]},
+  {w:"Iconoclast",d:"A person who attacks cherished beliefs",pos:"n",t:"hard",syn:["rebel","nonconformist","dissenter","critic","radical","heretic","skeptic"]},
+  {w:"Laconic",d:"Using very few words; terse",pos:"adj",t:"hard",syn:["brief","concise","short","terse","curt","succinct","pithy","taciturn"]},
+  {w:"Malfeasance",d:"Wrongdoing, especially by a public official",pos:"n",t:"hard",syn:["misconduct","wrongdoing","corruption","crime","misbehavior","abuse of power","malpractice"]},
+  {w:"Nefarious",d:"Wicked or criminal in nature",pos:"adj",t:"hard",syn:["wicked","evil","villainous","criminal","vile","sinister","malicious","heinous","corrupt"]},
+  {w:"Obsequious",d:"Excessively obedient or attentive; servile",pos:"adj",t:"hard",syn:["servile","submissive","fawning","groveling","sycophantic","subservient","bootlicking","flattering"]},
+  {w:"Perfunctory",d:"Carried out with little effort or reflection",pos:"adj",t:"hard",syn:["cursory","superficial","halfhearted","careless","mechanical","routine","negligent","hasty"]},
+  {w:"Recalcitrant",d:"Having an obstinately uncooperative attitude",pos:"adj",t:"hard",syn:["stubborn","defiant","uncooperative","rebellious","resistant","disobedient","obstinate","intractable"]},
+  {w:"Sycophant",d:"A person who flatters someone important",pos:"n",t:"hard",syn:["flatterer","bootlicker","brown-noser","yes-man","toady","kiss-up","lackey","fawner"]},
+  {w:"Truculent",d:"Eager or quick to argue or fight",pos:"adj",t:"hard",syn:["aggressive","hostile","combative","belligerent","confrontational","defiant","fierce","pugnacious"]},
+  {w:"Unconscionable",d:"Not right or reasonable; excessive",pos:"adj",t:"hard",syn:["unreasonable","outrageous","unjust","excessive","immoral","unethical","unfair","inexcusable"]},
+  {w:"Vacillate",d:"To alternate between opinions; to waver",pos:"v",t:"hard",syn:["hesitate","waver","fluctuate","dither","oscillate","seesaw","waffle","equivocate"]},
+  {w:"Acrimonious",d:"Angry and bitter in tone or manner",pos:"adj",t:"hard",syn:["bitter","hostile","angry","resentful","harsh","caustic","venomous","spiteful","nasty"]},
+  {w:"Bombastic",d:"High-sounding language with little meaning",pos:"adj",t:"hard",syn:["pompous","pretentious","grandiose","overblown","inflated","grandiloquent","verbose","flowery"]},
+  {w:"Chicanery",d:"The use of trickery to achieve an end",pos:"n",t:"hard",syn:["trickery","deception","fraud","deceit","dishonesty","scheming","manipulation","subterfuge"]},
+  {w:"Didactic",d:"Intended to teach a moral lesson",pos:"adj",t:"hard",syn:["instructive","educational","preachy","moralistic","pedagogical","informative","teacherly"]},
+  {w:"Equivocate",d:"To use ambiguous language to conceal truth",pos:"v",t:"hard",syn:["hedge","evade","dodge","prevaricate","waffle","mislead","be vague","sidestep"]},
+  {w:"Furtive",d:"Attempting to avoid notice; secretive",pos:"adj",t:"hard",syn:["sneaky","secretive","stealthy","sly","covert","clandestine","surreptitious","hidden","shifty"]},
+  {w:"Hubris",d:"Excessive pride or self-confidence",pos:"n",t:"hard",syn:["arrogance","pride","ego","conceit","overconfidence","vanity","presumption","cockiness"]},
+  {w:"Incorrigible",d:"Not able to be corrected or reformed",pos:"adj",t:"hard",syn:["hopeless","unreformable","incurable","hardened","unrepentant","persistent","inveterate"]},
+  {w:"Jingoism",d:"Extreme patriotism in aggressive foreign policy",pos:"n",t:"hard",syn:["nationalism","chauvinism","patriotism","hawkishness","xenophobia","flag-waving","warmongering"]},
+  {w:"Kowtow",d:"To act in an excessively submissive manner",pos:"v",t:"hard",syn:["grovel","submit","bow down","defer","fawn","toady","pander","brown-nose"]},
+  {w:"Loquacious",d:"Tending to talk a great deal; talkative",pos:"adj",t:"hard",syn:["talkative","chatty","garrulous","verbose","wordy","gossipy","mouthy","voluble"]},
+  {w:"Magnanimous",d:"Very generous or forgiving toward rivals",pos:"adj",t:"hard",syn:["generous","forgiving","noble","big-hearted","charitable","gracious","benevolent","merciful"]},
+  {w:"Obfuscate",d:"To render obscure or unclear",pos:"v",t:"hard",syn:["confuse","obscure","muddle","cloud","complicate","bewilder","blur","mystify","muddy"]},
+  {w:"Pernicious",d:"Having a harmful effect, especially gradually",pos:"adj",t:"hard",syn:["harmful","destructive","damaging","dangerous","toxic","deadly","evil","insidious","malignant"]},
+  {w:"Reticent",d:"Not revealing thoughts or feelings readily",pos:"adj",t:"hard",syn:["reserved","quiet","shy","secretive","taciturn","private","withdrawn","tight-lipped","uncommunicative"]},
+  {w:"Sanguine",d:"Optimistic or positive in a difficult situation",pos:"adj",t:"hard",syn:["optimistic","hopeful","positive","confident","cheerful","upbeat","buoyant","assured"]},
+  {w:"Trepidation",d:"A feeling of fear about something that may happen",pos:"n",t:"hard",syn:["fear","anxiety","dread","nervousness","worry","apprehension","unease","alarm"]},
+  {w:"Abrogate",d:"To repeal or do away with formally",pos:"v",t:"hard",syn:["repeal","abolish","cancel","revoke","annul","overturn","void","rescind","invalidate"]},
+  {w:"Churlish",d:"Rude in a mean-spirited and surly way",pos:"adj",t:"hard",syn:["rude","surly","grumpy","ill-mannered","boorish","uncouth","impolite","ungracious","grouchy"]},
+  {w:"Diffident",d:"Modest or shy due to a lack of confidence",pos:"adj",t:"hard",syn:["shy","timid","modest","reserved","bashful","unconfident","meek","self-conscious","hesitant"]},
+  {w:"Ebullient",d:"Cheerful and full of energy",pos:"adj",t:"hard",syn:["enthusiastic","lively","bubbly","exuberant","energetic","excited","effervescent","animated","vivacious"]},
+  {w:"Garrulous",d:"Excessively talkative about trivial things",pos:"adj",t:"hard",syn:["talkative","chatty","loquacious","verbose","mouthy","gossipy","rambling","long-winded"]},
+  {w:"Harangue",d:"A lengthy and aggressive speech",pos:"n",t:"hard",syn:["tirade","rant","lecture","diatribe","sermon","outburst","tongue-lashing","scolding"]},
+  {w:"Insipid",d:"Lacking flavor, vigor, or interest",pos:"adj",t:"hard",syn:["bland","dull","boring","tasteless","flat","uninteresting","vapid","lifeless","flavorless"]},
+  {w:"Lugubrious",d:"Looking or sounding sad and dismal",pos:"adj",t:"hard",syn:["sad","gloomy","mournful","melancholy","sorrowful","somber","dreary","dismal","doleful"]},
+  {w:"Mendacious",d:"Not telling the truth; lying",pos:"adj",t:"hard",syn:["lying","dishonest","deceitful","false","untruthful","deceptive","fraudulent","insincere"]},
+  {w:"Obstreperous",d:"Noisy and difficult to control",pos:"adj",t:"hard",syn:["rowdy","noisy","unruly","disorderly","loud","boisterous","wild","turbulent","raucous"]},
+  {w:"Parsimonious",d:"Extremely unwilling to spend money; miserly",pos:"adj",t:"hard",syn:["stingy","cheap","miserly","tight","penny-pinching","frugal","mean","niggardly","tightfisted"]},
+  {w:"Quixotic",d:"Exceedingly idealistic; unrealistic",pos:"adj",t:"hard",syn:["idealistic","unrealistic","impractical","romantic","utopian","dreamy","naive","visionary","fanciful"]},
+  {w:"Recondite",d:"Little known or obscure; abstruse",pos:"adj",t:"hard",syn:["obscure","esoteric","arcane","abstruse","complex","cryptic","deep","mysterious","hidden"]},
+  {w:"Sagacious",d:"Having or showing keen discernment and judgment",pos:"adj",t:"hard",syn:["wise","shrewd","astute","perceptive","insightful","clever","judicious","intelligent","discerning"]},
+  {w:"Temerity",d:"Excessive confidence or boldness; audacity",pos:"n",t:"hard",syn:["audacity","nerve","boldness","gall","impudence","recklessness","cheek","brazenness","daring"]},
+  {w:"Unctuous",d:"Excessively flattering or ingratiating",pos:"adj",t:"hard",syn:["sycophantic","oily","smarmy","fawning","insincere","slick","gushing","smooth","obsequious"]},
+  {w:"Verisimilitude",d:"The appearance of being true or real",pos:"n",t:"hard",syn:["realism","authenticity","plausibility","believability","credibility","lifelikeness","truthfulness"]},
+  {w:"Winsome",d:"Attractive or appealing in a fresh way",pos:"adj",t:"hard",syn:["charming","appealing","endearing","lovely","delightful","sweet","engaging","likable","cute"]},
+  {w:"Assiduously",d:"With great care, attention, and effort",pos:"adv",t:"hard",syn:["diligently","carefully","thoroughly","meticulously","industriously","painstakingly","tirelessly"]},
+  {w:"Calumny",d:"The making of false statements to damage reputation",pos:"n",t:"hard",syn:["slander","libel","defamation","smear","lies","vilification","mudslinging","character assassination"]},
+  {w:"Desultory",d:"Lacking a plan or purpose; random",pos:"adj",t:"hard",syn:["random","aimless","unfocused","haphazard","disconnected","scattered","halfhearted","erratic"]},
+  {w:"Effrontery",d:"Insolent or impertinent behavior",pos:"n",t:"hard",syn:["nerve","audacity","gall","impudence","cheek","brazenness","insolence","boldness","chutzpah"]},
+  {w:"Fatuous",d:"Silly and pointless",pos:"adj",t:"hard",syn:["silly","foolish","stupid","idiotic","absurd","inane","mindless","vacuous","asinine"]},
+  {w:"Ignominious",d:"Deserving or causing public disgrace",pos:"adj",t:"hard",syn:["disgraceful","shameful","humiliating","dishonorable","embarrassing","degrading","infamous"]},
+  {w:"Litigious",d:"Tending or too inclined to bring lawsuits",pos:"adj",t:"hard",syn:["lawsuit-happy","quarrelsome","contentious","combative","argumentative","disputatious"]},
+  {w:"Munificent",d:"Larger or more generous than usual",pos:"adj",t:"hard",syn:["generous","lavish","liberal","bountiful","charitable","magnanimous","openhanded","philanthropic"]},
+  {w:"Opprobrium",d:"Harsh criticism or censure",pos:"n",t:"hard",syn:["criticism","condemnation","censure","scorn","disgrace","shame","reproach","contempt","denunciation"]},
+  {w:"Pusillanimous",d:"Showing a lack of courage; timid",pos:"adj",t:"hard",syn:["cowardly","timid","fearful","spineless","gutless","weak","faint-hearted","chicken","lily-livered"]},
+  {w:"Risible",d:"Relating to laughter; laughable",pos:"adj",t:"hard",syn:["laughable","funny","ridiculous","absurd","comical","amusing","hilarious","ludicrous"]},
+  {w:"Specious",d:"Superficially plausible but actually wrong",pos:"adj",t:"hard",syn:["misleading","deceptive","false","fallacious","flawed","unsound","bogus","hollow"]},
+  {w:"Tendentious",d:"Expressing a strong opinion; biased",pos:"adj",t:"hard",syn:["biased","partisan","one-sided","prejudiced","slanted","opinionated","partial","skewed"]},
+  {w:"Vituperative",d:"Bitter and abusive in language",pos:"adj",t:"hard",syn:["abusive","harsh","scathing","venomous","caustic","nasty","hostile","malicious","insulting"]},
+  {w:"Atavistic",d:"Relating to reversion to an ancestral type",pos:"adj",t:"hard",syn:["primitive","primal","ancestral","regressive","throwback","prehistoric","instinctive","archaic"]},
+  {w:"Circumlocution",d:"Using many words where fewer would do",pos:"n",t:"hard",syn:["wordiness","verbosity","long-windedness","rambling","beating around the bush","indirectness"]},
   // ── Flashcard words ──
-  {w:"Evoke",d:"To bring a feeling, memory, or image to mind",pos:"v",t:"cards"},
-  {w:"Evince",d:"To reveal the presence of a quality or feeling",pos:"v",t:"cards"},
-  {w:"Hapless",d:"Unfortunate; having no luck",pos:"adj",t:"cards"},
-  {w:"Hackneyed",d:"Lacking originality; overused and trite",pos:"adj",t:"cards"},
-  {w:"Decree",d:"An official order issued by an authority",pos:"n",t:"cards"},
-  {w:"Decorous",d:"In keeping with good taste and propriety",pos:"adj",t:"cards"},
-  {w:"Constitution",d:"The fundamental principles governing a state or organization",pos:"n",t:"cards"},
-  {w:"Constitute",d:"To be a component or part of something",pos:"v",t:"cards"},
-  {w:"Abscond",d:"To leave hurriedly and secretly to escape",pos:"v",t:"cards"},
-  {w:"Abridge",d:"To shorten without losing the sense",pos:"v",t:"cards"},
-  {w:"Vicarious",d:"Experienced through the feelings of another person",pos:"adj",t:"cards"},
-  {w:"Vex",d:"To make someone feel annoyed or frustrated",pos:"v",t:"cards"},
-  {w:"Flout",d:"To openly disregard a rule or convention",pos:"v",t:"cards"},
-  {w:"Flourish",d:"To grow or develop in a healthy or vigorous way",pos:"v",t:"cards"},
-  {w:"Predecessor",d:"A person who held a position before the current holder",pos:"n",t:"cards"},
-  {w:"Precocious",d:"Unusually advanced or mature at an early age",pos:"adj",t:"cards"},
-  {w:"Bane",d:"A cause of great distress or annoyance",pos:"n",t:"cards"},
-  {w:"Juxtaposition",d:"The act of placing things close together for contrast",pos:"n",t:"cards"},
-  {w:"Just",d:"Based on or behaving according to what is morally right and fair",pos:"adj",t:"cards"},
-  {w:"Complicit",d:"Involved with others in an unlawful or wrong activity",pos:"adj",t:"cards"},
-  {w:"Complement",d:"Something that completes or goes well with something",pos:"n",t:"cards"},
-  {w:"Summit",d:"The highest point of a hill or mountain; a meeting of leaders",pos:"n",t:"cards"},
-  {w:"Impinge",d:"To have an effect, especially a negative one",pos:"v",t:"cards"},
-  {w:"Impetuous",d:"Acting quickly without thought or care",pos:"adj",t:"cards"},
-  {w:"Spurious",d:"Not genuine, authentic, or true; false",pos:"adj",t:"cards"},
-  {w:"Sovereign",d:"A supreme ruler; possessing supreme authority",pos:"n",t:"cards"},
-  {w:"Foresight",d:"The ability to predict what will happen in the future",pos:"n",t:"cards"},
-  {w:"Foreseeable",d:"Able to be predicted or expected",pos:"adj",t:"cards"},
-  {w:"Discern",d:"To perceive or recognize something clearly",pos:"v",t:"cards"},
-  {w:"Disavow",d:"To deny any responsibility or support for",pos:"v",t:"cards"},
+  {w:"Evoke",d:"To bring a feeling, memory, or image to mind",pos:"v",t:"cards",syn:["recall","summon","conjure","elicit","arouse","stir","invoke","awaken","trigger"]},
+  {w:"Evince",d:"To reveal the presence of a quality or feeling",pos:"v",t:"cards",syn:["show","reveal","demonstrate","display","exhibit","manifest","indicate","express"]},
+  {w:"Hapless",d:"Unfortunate; having no luck",pos:"adj",t:"cards",syn:["unlucky","unfortunate","luckless","ill-fated","poor","wretched","miserable","cursed"]},
+  {w:"Hackneyed",d:"Lacking originality; overused and trite",pos:"adj",t:"cards",syn:["cliche","overused","trite","stale","unoriginal","banal","tired","worn-out","stock"]},
+  {w:"Decree",d:"An official order issued by an authority",pos:"n",t:"cards",syn:["order","ruling","edict","mandate","law","command","proclamation","directive","judgment","ordinance"]},
+  {w:"Decorous",d:"In keeping with good taste and propriety",pos:"adj",t:"cards",syn:["proper","polite","dignified","tasteful","refined","appropriate","seemly","correct","respectable"]},
+  {w:"Constitution",d:"The fundamental principles governing a state or organization",pos:"n",t:"cards",syn:["charter","framework","founding document","laws","rules","principles","bylaws","structure"]},
+  {w:"Constitute",d:"To be a component or part of something",pos:"v",t:"cards",syn:["make up","form","compose","comprise","represent","amount to","establish","create"]},
+  {w:"Abscond",d:"To leave hurriedly and secretly to escape",pos:"v",t:"cards",syn:["flee","escape","run away","bolt","disappear","vanish","skip town","take off"]},
+  {w:"Abridge",d:"To shorten without losing the sense",pos:"v",t:"cards",syn:["shorten","condense","abbreviate","cut","reduce","summarize","truncate","compress","trim"]},
+  {w:"Vicarious",d:"Experienced through the feelings of another person",pos:"adj",t:"cards",syn:["indirect","secondhand","surrogate","empathetic","substitute","through others"]},
+  {w:"Vex",d:"To make someone feel annoyed or frustrated",pos:"v",t:"cards",syn:["annoy","irritate","frustrate","bother","aggravate","anger","irk","exasperate","bug"]},
+  {w:"Flout",d:"To openly disregard a rule or convention",pos:"v",t:"cards",syn:["defy","disobey","violate","disregard","ignore","break","scorn","mock","rebel against"]},
+  {w:"Flourish",d:"To grow or develop in a healthy or vigorous way",pos:"v",t:"cards",syn:["thrive","prosper","bloom","blossom","succeed","grow","boom","do well"]},
+  {w:"Predecessor",d:"A person who held a position before the current holder",pos:"n",t:"cards",syn:["forerunner","precursor","antecedent","former holder","ancestor","prior occupant"]},
+  {w:"Precocious",d:"Unusually advanced or mature at an early age",pos:"adj",t:"cards",syn:["advanced","mature","gifted","talented","prodigious","bright","ahead","early developer"]},
+  {w:"Bane",d:"A cause of great distress or annoyance",pos:"n",t:"cards",syn:["curse","plague","scourge","nuisance","torment","pest","ruin","affliction","nightmare"]},
+  {w:"Juxtaposition",d:"The act of placing things close together for contrast",pos:"n",t:"cards",syn:["contrast","comparison","side by side","proximity","adjacency","pairing"]},
+  {w:"Just",d:"Based on or behaving according to what is morally right and fair",pos:"adj",t:"cards",syn:["fair","righteous","equitable","moral","ethical","impartial","honorable","upright","virtuous"]},
+  {w:"Complicit",d:"Involved with others in an unlawful or wrong activity",pos:"adj",t:"cards",syn:["involved","guilty","colluding","conspiring","accomplice","accessory","participating","in on it"]},
+  {w:"Complement",d:"Something that completes or goes well with something",pos:"n",t:"cards",syn:["addition","companion","counterpart","supplement","match","partner","completion","enhancement"]},
+  {w:"Summit",d:"The highest point of a hill or mountain; a meeting of leaders",pos:"n",t:"cards",syn:["peak","top","pinnacle","apex","crest","zenith","conference","meeting"]},
+  {w:"Impinge",d:"To have an effect, especially a negative one",pos:"v",t:"cards",syn:["affect","impact","encroach","infringe","intrude","trespass","influence","interfere"]},
+  {w:"Impetuous",d:"Acting quickly without thought or care",pos:"adj",t:"cards",syn:["impulsive","rash","hasty","reckless","spontaneous","hotheaded","careless","unthinking"]},
+  {w:"Spurious",d:"Not genuine, authentic, or true; false",pos:"adj",t:"cards",syn:["fake","false","bogus","fraudulent","counterfeit","phony","fabricated","sham","untrue"]},
+  {w:"Sovereign",d:"A supreme ruler; possessing supreme authority",pos:"n",t:"cards",syn:["ruler","monarch","king","queen","supreme","independent","autonomous","royal","self-governing"]},
+  {w:"Foresight",d:"The ability to predict what will happen in the future",pos:"n",t:"cards",syn:["planning","vision","forethought","anticipation","prudence","preparation","prescience","far-sightedness"]},
+  {w:"Foreseeable",d:"Able to be predicted or expected",pos:"adj",t:"cards",syn:["predictable","expected","anticipated","likely","probable","imaginable","calculable"]},
+  {w:"Discern",d:"To perceive or recognize something clearly",pos:"v",t:"cards",syn:["perceive","detect","recognize","distinguish","identify","notice","see","observe","spot","tell"]},
+  {w:"Disavow",d:"To deny any responsibility or support for",pos:"v",t:"cards",syn:["deny","reject","disown","repudiate","renounce","disclaim","retract","disassociate"]},
 ];
 
 const TIERS = [{value:"all",label:"All"},{value:"cards",label:"Cards"},{value:"easy",label:"Easy"},{value:"med",label:"Medium"},{value:"hard",label:"Hard"}];
@@ -244,31 +244,117 @@ function scoreTier(s){
   return {tier:"miss",pts:0,color:"#d45555",bg:"rgba(212,85,85,0.08)",label:"Off target",icon:"\u2717"};
 }
 
-async function aiJudge(word, correctDef, userAnswer){
-  try {
-    var r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: "You are a vocabulary quiz judge. Score how well a player's answer captures a word's meaning on a scale of 0-100.\n\nScoring guide:\n- 90-100: Perfect or near-perfect definition, correct synonym, or textbook answer\n- 70-89: Clearly understands the meaning. Good synonym, reasonable paraphrase, or example that shows understanding\n- 50-69: In the right neighborhood. Gets the general vibe or one aspect right but incomplete or slightly off\n- 30-49: Vaguely related. Some dim awareness but too imprecise\n- 10-29: Mostly wrong. Maybe confused with a similar word\n- 0-9: Completely wrong, opposite meaning, or gibberish\n\nBe generous with informal language and slang. \"happy\" for Jubilant = 85. \"cheap\" for Frugal = 80. \"kinda sad\" for Forlorn = 70. \"energy\" for Lethargy = 15 (opposite).\n\nRespond with ONLY a JSON object, no markdown: {\"score\": <0-100>, \"note\": \"<brief 4-8 word explanation>\"}",
-        messages: [{role: "user", content: "Word: \"" + word + "\"\nDefinition: \"" + correctDef + "\"\nPlayer wrote: \"" + userAnswer + "\""}]
-      })
-    });
-    var d = await r.json();
-    var t = d.content.map(function(i){ return i.text || ""; }).join("").replace(/```json|```/g, "").trim();
-    var parsed = JSON.parse(t);
-    return {score: Math.max(0, Math.min(100, parsed.score || 0)), note: parsed.note || ""};
-  } catch(err) {
-    console.error("AI judge error:", err);
-    var ua = userAnswer.toLowerCase();
-    var cd = correctDef.toLowerCase();
-    var kw = cd.split(/\s+/).filter(function(w){ return w.length > 3; });
-    var hits = kw.filter(function(k){ return ua.includes(k); }).length;
-    var sc = kw.length > 0 ? Math.round((hits / kw.length) * 80) : 20;
-    return {score: sc, note: sc >= 40 ? "Keyword match (offline)" : "No match (offline)"};
+function normalizeWord(s) {
+  return s.toLowerCase().replace(/[^a-z\s-]/g, "").trim();
+}
+
+function stemWord(w) {
+  // Simple suffix stripping for matching flexibility
+  return w.replace(/(ing|tion|sion|ment|ness|ous|ive|ful|less|able|ible|ity|ally|ly|ed|er|est|al|ism|ist|ent|ant|ary|ory|ic|ical|ize|ise|ify|ate)$/, "");
+}
+
+function offlineJudge(wordEntry, userAnswer) {
+  var ua = normalizeWord(userAnswer);
+  var synonyms = (wordEntry.syn || []).map(normalizeWord);
+  var defWords = normalizeWord(wordEntry.d).split(/\s+/).filter(function(w) { return w.length > 2; });
+
+  // 1. Exact synonym match → 85
+  if (synonyms.indexOf(ua) !== -1) {
+    return { score: 85, note: "Synonym match" };
   }
+
+  // 2. Check if user answer contains a synonym or vice versa
+  var uaWords = ua.split(/\s+/);
+  var synMatch = false;
+  var bestSynOverlap = 0;
+  for (var i = 0; i < synonyms.length; i++) {
+    var syn = synonyms[i];
+    // User typed a synonym phrase or synonym is contained in their answer
+    if (ua.includes(syn) || syn.includes(ua)) {
+      synMatch = true;
+      break;
+    }
+    // Check individual words from user answer against synonyms
+    for (var j = 0; j < uaWords.length; j++) {
+      if (uaWords[j].length > 2 && (syn === uaWords[j] || syn.includes(uaWords[j]) || uaWords[j].includes(syn))) {
+        synMatch = true;
+        break;
+      }
+      // Stem-based matching: "ruling" stems to "rul", "rule" stems to "rul"
+      if (uaWords[j].length > 3 && stemWord(uaWords[j]) === stemWord(syn) && stemWord(uaWords[j]).length > 2) {
+        synMatch = true;
+        break;
+      }
+    }
+    if (synMatch) break;
+
+    // Multi-word synonym overlap
+    var synWords = syn.split(/\s+/);
+    var overlap = 0;
+    for (var k = 0; k < synWords.length; k++) {
+      for (var m = 0; m < uaWords.length; m++) {
+        if (synWords[k].length > 2 && uaWords[m].length > 2 && (synWords[k] === uaWords[m] || stemWord(synWords[k]) === stemWord(uaWords[m]))) {
+          overlap++;
+          break;
+        }
+      }
+    }
+    if (synWords.length > 1 && overlap >= synWords.length * 0.5) {
+      synMatch = true;
+      break;
+    }
+    if (overlap > bestSynOverlap) bestSynOverlap = overlap;
+  }
+
+  if (synMatch) {
+    return { score: 80, note: "Close synonym match" };
+  }
+
+  // 3. Check stem matches against all synonyms
+  var uaStems = uaWords.filter(function(w) { return w.length > 3; }).map(stemWord);
+  var synStems = [];
+  for (var s = 0; s < synonyms.length; s++) {
+    synonyms[s].split(/\s+/).forEach(function(sw) {
+      if (sw.length > 3) synStems.push(stemWord(sw));
+    });
+  }
+  var stemHits = 0;
+  for (var a = 0; a < uaStems.length; a++) {
+    if (uaStems[a].length > 2 && synStems.indexOf(uaStems[a]) !== -1) stemHits++;
+  }
+  if (stemHits > 0) {
+    var stemScore = Math.min(75, 55 + stemHits * 10);
+    return { score: stemScore, note: "Partial synonym match" };
+  }
+
+  // 4. Definition keyword matching (existing approach, improved)
+  var defStems = defWords.filter(function(w) { return w.length > 3; }).map(stemWord);
+  var defHits = 0;
+  for (var b = 0; b < uaStems.length; b++) {
+    if (uaStems[b].length > 2 && defStems.indexOf(uaStems[b]) !== -1) defHits++;
+  }
+  // Also check raw word overlap with definition
+  var rawDefHits = 0;
+  for (var c = 0; c < uaWords.length; c++) {
+    if (uaWords[c].length > 3 && defWords.indexOf(uaWords[c]) !== -1) rawDefHits++;
+  }
+  var totalDefHits = Math.max(defHits, rawDefHits);
+  if (totalDefHits > 0 && defStems.length > 0) {
+    var defScore = Math.min(75, Math.round((totalDefHits / defStems.length) * 80));
+    return { score: Math.max(defScore, 40), note: "Definition keyword match" };
+  }
+
+  // 5. Partial word overlap with synonyms (weaker signal)
+  if (bestSynOverlap > 0) {
+    return { score: 35, note: "Loosely related" };
+  }
+
+  return { score: 0, note: "No match found" };
+}
+
+async function aiJudge(word, correctDef, userAnswer, wordEntry) {
+  // Always use offline judge — the Anthropic API doesn't support browser CORS
+  return offlineJudge(wordEntry, userAnswer);
 }
 
 var C = {
@@ -512,7 +598,7 @@ export default function SATVocab(){
     if(answered || judging || !typedAnswer.trim()) return;
     var q = questions[qIndex];
     setTimerRunning(false); setJudging(true);
-    var result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim());
+    var result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim(), q.word);
     setTimerRunning(true); setJudging(false);
     var t = processResult(result.score, q, typedAnswer.trim());
     setAnswered({score:result.score, note:result.note});
