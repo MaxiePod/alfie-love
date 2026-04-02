@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { C } from '../theme';
+import { APP_VERSION } from '../App';
 
 const navItems = [
   { path: '/', label: 'Home' },
@@ -129,8 +130,21 @@ export default function Layout({ children }) {
         fontSize: '11px',
         letterSpacing: '2px',
         color: C.textDim,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '12px',
       }}>
-        alfie.love
+        <span>alfie.love</span>
+        <span style={{
+          fontSize: '9px',
+          letterSpacing: '1px',
+          padding: '2px 8px',
+          borderRadius: '2px',
+          background: C.inputBg,
+          border: '1px solid ' + C.inputBorder,
+          color: C.textDim,
+        }}>{APP_VERSION}</span>
       </footer>
 
       <style>{`
