@@ -556,6 +556,24 @@ function FeedbackCard(props) {
   );
 }
 
+function LearnRowButton(props) {
+  var [saved, setSaved] = useState(false);
+  return saved ? (
+    <span style={{fontSize:"9px",color:C.green,letterSpacing:"1px"}}>{"\u2713 Learned"}</span>
+  ) : (
+    <button onClick={function(){ saveLearnedDef(props.word, props.answer); setSaved(true); }} style={{
+      background:C.purpleBg,border:"1px solid rgba(155,142,196,0.3)",color:C.purple,
+      padding:"4px 10px",fontSize:"9px",fontFamily:"'Roboto', sans-serif",fontWeight:400,
+      letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",
+      transition:"all 0.15s",whiteSpace:"nowrap",
+    }}
+      onMouseEnter={function(e){e.target.style.background="rgba(155,142,196,0.2)"}}
+      onMouseLeave={function(e){e.target.style.background=C.purpleBg}}>
+      Learn
+    </button>
+  );
+}
+
 export default function SATVocab(){
   var [screen, setScreen] = useState("setup");
   var [mode, setMode] = useState("race");
@@ -1013,7 +1031,10 @@ export default function SATVocab(){
                         <div key={j} style={{padding:"8px 0",borderBottom:"1px solid "+C.cardBorder}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
                             <span style={{fontSize:"14px",fontWeight:400,color:C.white}}>{wl.w}</span>
-                            <span style={{fontSize:"13px",fontWeight:400,color:t.color,fontFamily:"'Roboto Mono', monospace"}}>{wl.score}%</span>
+                            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                              {learnMode && wl.yourAnswer ? <LearnRowButton word={wl.w} answer={wl.yourAnswer}/> : null}
+                              <span style={{fontSize:"13px",fontWeight:400,color:t.color,fontFamily:"'Roboto Mono', monospace"}}>{wl.score}%</span>
+                            </div>
                           </div>
                           <ScoreBar score={wl.score} height={4}/>
                           <div style={{display:"flex",justifyContent:"space-between",marginTop:"4px"}}>
