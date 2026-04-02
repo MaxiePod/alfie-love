@@ -249,38 +249,99 @@ function normalizeWord(s) {
 }
 
 function stemWord(w) {
-  // Simple suffix stripping for matching flexibility
   return w.replace(/(ing|tion|sion|ment|ness|ous|ive|ful|less|able|ible|ity|ally|ly|ed|er|est|al|ism|ist|ent|ant|ary|ory|ic|ical|ize|ise|ify|ate)$/, "");
+}
+
+// Jaccard similarity on word sets (0-1)
+function wordSetSimilarity(a, b) {
+  var setA = a.split(/\s+/).filter(function(w) { return w.length > 2; });
+  var setB = b.split(/\s+/).filter(function(w) { return w.length > 2; });
+  if (setA.length === 0 || setB.length === 0) return 0;
+  var intersection = 0;
+  for (var i = 0; i < setA.length; i++) {
+    for (var j = 0; j < setB.length; j++) {
+      if (setA[i] === setB[j] || (setA[i].length > 3 && setB[j].length > 3 && stemWord(setA[i]) === stemWord(setB[j]))) {
+        intersection++;
+        break;
+      }
+    }
+  }
+  var union = setA.length + setB.length - intersection;
+  return union > 0 ? intersection / union : 0;
+}
+
+// Load user-learned definitions from localStorage
+function getLearnedDefs(word) {
+  try {
+    var all = JSON.parse(localStorage.getItem("lexicon_learned") || "{}");
+    return all[word.toLowerCase()] || [];
+  } catch(e) { return []; }
+}
+
+function saveLearnedDef(word, def) {
+  try {
+    var all = JSON.parse(localStorage.getItem("lexicon_learned") || "{}");
+    var key = word.toLowerCase();
+    if (!all[key]) all[key] = [];
+    var normalized = normalizeWord(def);
+    // Don't add duplicates
+    var exists = all[key].some(function(d) { return normalizeWord(d) === normalized; });
+    if (!exists) all[key].push(def);
+    localStorage.setItem("lexicon_learned", JSON.stringify(all));
+  } catch(e) { console.error("Failed to save learned def:", e); }
 }
 
 function offlineJudge(wordEntry, userAnswer) {
   var ua = normalizeWord(userAnswer);
+  var def = normalizeWord(wordEntry.d);
   var synonyms = (wordEntry.syn || []).map(normalizeWord);
-  var defWords = normalizeWord(wordEntry.d).split(/\s+/).filter(function(w) { return w.length > 2; });
+  var uaWords = ua.split(/\s+/);
 
-  // 1. Exact synonym match → 85
+  // 0. Check against user-learned definitions first
+  var learned = getLearnedDefs(wordEntry.w);
+  for (var ld = 0; ld < learned.length; ld++) {
+    var learnedNorm = normalizeWord(learned[ld]);
+    var learnedSim = wordSetSimilarity(ua, learnedNorm);
+    if (ua === learnedNorm || learnedSim >= 0.5) {
+      return { score: 90, note: "Matches your learned definition" };
+    }
+    // Check if user answer is contained in or contains the learned def
+    if (ua.includes(learnedNorm) || learnedNorm.includes(ua)) {
+      return { score: 85, note: "Matches your learned definition" };
+    }
+  }
+
+  // 1. Definition similarity — compare directly against the definition text
+  var defSim = wordSetSimilarity(ua, def);
+  if (defSim >= 0.7) {
+    return { score: 95, note: "Excellent definition" };
+  }
+  if (defSim >= 0.5) {
+    return { score: 85, note: "Great definition" };
+  }
+  if (defSim >= 0.35) {
+    return { score: 75, note: "Good definition" };
+  }
+
+  // 2. Exact synonym match
   if (synonyms.indexOf(ua) !== -1) {
     return { score: 85, note: "Synonym match" };
   }
 
-  // 2. Check if user answer contains a synonym or vice versa
-  var uaWords = ua.split(/\s+/);
+  // 3. Check if user answer contains a synonym or vice versa
   var synMatch = false;
   var bestSynOverlap = 0;
   for (var i = 0; i < synonyms.length; i++) {
     var syn = synonyms[i];
-    // User typed a synonym phrase or synonym is contained in their answer
     if (ua.includes(syn) || syn.includes(ua)) {
       synMatch = true;
       break;
     }
-    // Check individual words from user answer against synonyms
     for (var j = 0; j < uaWords.length; j++) {
       if (uaWords[j].length > 2 && (syn === uaWords[j] || syn.includes(uaWords[j]) || uaWords[j].includes(syn))) {
         synMatch = true;
         break;
       }
-      // Stem-based matching: "ruling" stems to "rul", "rule" stems to "rul"
       if (uaWords[j].length > 3 && stemWord(uaWords[j]) === stemWord(syn) && stemWord(uaWords[j]).length > 2) {
         synMatch = true;
         break;
@@ -288,7 +349,6 @@ function offlineJudge(wordEntry, userAnswer) {
     }
     if (synMatch) break;
 
-    // Multi-word synonym overlap
     var synWords = syn.split(/\s+/);
     var overlap = 0;
     for (var k = 0; k < synWords.length; k++) {
@@ -307,10 +367,10 @@ function offlineJudge(wordEntry, userAnswer) {
   }
 
   if (synMatch) {
-    return { score: 80, note: "Close synonym match" };
+    return { score: 80, note: "Synonym match" };
   }
 
-  // 3. Check stem matches against all synonyms
+  // 4. Stem matches against synonyms
   var uaStems = uaWords.filter(function(w) { return w.length > 3; }).map(stemWord);
   var synStems = [];
   for (var s = 0; s < synonyms.length; s++) {
@@ -327,24 +387,12 @@ function offlineJudge(wordEntry, userAnswer) {
     return { score: stemScore, note: "Partial synonym match" };
   }
 
-  // 4. Definition keyword matching (existing approach, improved)
-  var defStems = defWords.filter(function(w) { return w.length > 3; }).map(stemWord);
-  var defHits = 0;
-  for (var b = 0; b < uaStems.length; b++) {
-    if (uaStems[b].length > 2 && defStems.indexOf(uaStems[b]) !== -1) defHits++;
-  }
-  // Also check raw word overlap with definition
-  var rawDefHits = 0;
-  for (var c = 0; c < uaWords.length; c++) {
-    if (uaWords[c].length > 3 && defWords.indexOf(uaWords[c]) !== -1) rawDefHits++;
-  }
-  var totalDefHits = Math.max(defHits, rawDefHits);
-  if (totalDefHits > 0 && defStems.length > 0) {
-    var defScore = Math.min(75, Math.round((totalDefHits / defStems.length) * 80));
-    return { score: Math.max(defScore, 40), note: "Definition keyword match" };
+  // 5. Weaker definition keyword matching
+  if (defSim >= 0.15) {
+    return { score: Math.min(60, Math.round(defSim * 120)), note: "Partially correct" };
   }
 
-  // 5. Partial word overlap with synonyms (weaker signal)
+  // 6. Partial synonym overlap
   if (bestSynOverlap > 0) {
     return { score: 35, note: "Loosely related" };
   }
@@ -353,7 +401,6 @@ function offlineJudge(wordEntry, userAnswer) {
 }
 
 async function aiJudge(word, correctDef, userAnswer, wordEntry) {
-  // Always use offline judge — the Anthropic API doesn't support browser CORS
   return offlineJudge(wordEntry, userAnswer);
 }
 
@@ -432,8 +479,15 @@ function SegmentedControl(props){
 function FeedbackCard(props) {
   var answered = props.answered;
   var word = props.word;
+  var userAnswer = props.userAnswer;
+  var [learned, setLearned] = useState(false);
   if (!answered || !answered.score && answered.score !== 0) return null;
   var t = scoreTier(answered.score);
+  var showLearn = answered.score < 70 && userAnswer && userAnswer.trim().length > 0;
+  var handleLearn = function() {
+    saveLearnedDef(word.w, userAnswer.trim());
+    setLearned(true);
+  };
   return (
     <div style={{marginTop:"16px"}}>
       <div style={{marginBottom:"12px"}}><ScoreBar score={answered.score}/></div>
@@ -449,6 +503,26 @@ function FeedbackCard(props) {
       <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.5"}}>
         <span style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim}}>Definition: </span>{word.d}
       </div>
+      {showLearn ? (
+        <div style={{marginTop:"10px"}}>
+          {learned ? (
+            <div style={{fontSize:"11px",color:C.green,letterSpacing:"1px",padding:"8px 12px",background:C.greenBg,borderRadius:"2px",border:"1px solid rgba(92,184,112,0.2)"}}>
+              {"\u2713 Learned! Your answer will be accepted next time."}
+            </div>
+          ) : (
+            <button onClick={handleLearn} style={{
+              background:C.purpleBg,border:"1px solid rgba(155,142,196,0.25)",color:C.purple,
+              padding:"8px 16px",fontSize:"11px",fontFamily:"'Roboto', sans-serif",fontWeight:400,
+              letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",
+              transition:"all 0.2s",width:"100%",
+            }}
+              onMouseEnter={function(e){e.target.style.background="rgba(155,142,196,0.15)"}}
+              onMouseLeave={function(e){e.target.style.background=C.purpleBg}}>
+              {"I was right \u2014 Learn this answer"}
+            </button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -808,7 +882,7 @@ export default function SATVocab(){
                   <div style={{display:"flex",gap:"4px"}}>{[0,1,2].map(function(i){return <div key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:C.purple,animation:"pulse 1.2s ease-in-out infinite",animationDelay:i*0.2+"s"}}/>;})}</div>
                   <span style={{fontSize:"12px",color:C.purple,letterSpacing:"1px"}}>AI is scoring...</span>
                 </div> : null}
-                {answered ? <FeedbackCard answered={answered} word={currentQ.word}/> : null}
+                {answered ? <FeedbackCard answered={answered} word={currentQ.word} userAnswer={typedAnswer}/> : null}
               </div>
             )}
           </div>
