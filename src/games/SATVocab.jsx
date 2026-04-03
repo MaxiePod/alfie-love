@@ -248,6 +248,14 @@ const WORDS = [
   {w:"Maverick",d:"An independent-minded person",pos:"n",t:"cards",syn:["rebel","nonconformist","individualist","free spirit","dissenter","loner","renegade"]},
 ];
 
+// ── Custom cards (localStorage) ──
+function getCustomCards() {
+  try { return JSON.parse(localStorage.getItem("lexicon_custom_cards") || "[]"); } catch(e) { return []; }
+}
+function saveCustomCards(cards) {
+  localStorage.setItem("lexicon_custom_cards", JSON.stringify(cards));
+}
+
 const TIERS = [{value:"all",label:"All"},{value:"cards",label:"Cards"},{value:"easy",label:"Easy"},{value:"med",label:"Medium"},{value:"hard",label:"Hard"}];
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 const posLabel = function(p) { return p==="n"?"noun":p==="v"?"verb":p==="adv"?"adverb":"adjective"; };
@@ -655,6 +663,12 @@ export default function SATVocab(){
   var [gameOver, setGameOver] = useState(false);
   var [typedAnswer, setTypedAnswer] = useState("");
   var [judging, setJudging] = useState(false);
+  var [customCards, setCustomCards] = useState(getCustomCards);
+  var [showAddCard, setShowAddCard] = useState(false);
+  var [newWord, setNewWord] = useState("");
+  var [newDef, setNewDef] = useState("");
+  var [newPos, setNewPos] = useState("adj");
+  var [newSyn, setNewSyn] = useState("");
   var timeRef = useRef(0);
   var inputRef = useRef(null);
 
@@ -678,7 +692,8 @@ export default function SATVocab(){
   useEffect(function(){ wordLogRef.current = wordLog; }, [wordLog]);
   useEffect(function(){ qIndexRef.current = qIndex; }, [qIndex]);
 
-  var pool = useMemo(function(){ return tier==="all" ? WORDS : WORDS.filter(function(w){ return w.t===tier; }); }, [tier]);
+  var allWords = useMemo(function(){ return WORDS.concat(customCards); }, [customCards]);
+  var pool = useMemo(function(){ return tier==="all" ? allWords : allWords.filter(function(w){ return w.t===tier; }); }, [tier, allWords]);
   var totalAvailable = pool.length;
   var raceOptions = useMemo(function(){
     var o = [10,15,20,25,40,50].filter(function(n){ return n<=totalAvailable; });
@@ -830,7 +845,7 @@ export default function SATVocab(){
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={styles.title}>Lexicon</div>
-        <div style={styles.subtitle}>{WORDS.length} SAT vocabulary words</div>
+        <div style={styles.subtitle}>{allWords.length} SAT vocabulary words</div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={styles.label}>Game Mode</div>
           <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
@@ -864,6 +879,52 @@ export default function SATVocab(){
               <span style={{color:C.gold}}>40-69%</span>{" = Partial (0.5 pt)  \u00B7  "}
               <span style={{color:C.red}}>0-39%</span>{" = Miss (burns a life)"}
             </div>
+          </div> : null}
+        </div>
+        <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showAddCard?"16px":"0"}}>
+            <div style={styles.label}>My Cards {customCards.length>0?"("+customCards.length+")":""}</div>
+            <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:showAddCard?C.purple:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s"}}
+              onClick={function(){ setShowAddCard(!showAddCard); }}
+              onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
+              onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=showAddCard?C.purple:C.textDim}}>
+              {showAddCard?"Close":"+ Add Word"}
+            </button>
+          </div>
+          {showAddCard ? <div>
+            <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"12px"}}>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value)}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Definition" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Synonyms (comma-separated)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
+              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim}}>Type:</div>
+                <SegmentedControl options={[{value:"adj",label:"Adj"},{value:"n",label:"Noun"},{value:"v",label:"Verb"},{value:"adv",label:"Adv"}]} value={newPos} onChange={setNewPos}/>
+              </div>
+            </div>
+            <button style={Object.assign({},styles.btn,{width:"100%",opacity:newWord.trim()&&newDef.trim()?"1":"0.4"})} onClick={function(){
+              if(!newWord.trim()||!newDef.trim()) return;
+              var syns = newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean);
+              var card = {w:newWord.trim(),d:newDef.trim(),pos:newPos,t:"cards",syn:syns};
+              var updated = customCards.concat([card]);
+              setCustomCards(updated);
+              saveCustomCards(updated);
+              setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");
+            }} onMouseEnter={function(e){if(newWord.trim()&&newDef.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
+            {customCards.length>0 ? <div style={{marginTop:"16px",borderTop:"1px solid "+C.cardBorder,paddingTop:"12px"}}>
+              {customCards.map(function(c,i){
+                return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                  <div>
+                    <span style={{color:C.white,fontSize:"13px"}}>{c.w}</span>
+                    <span style={{color:C.textDim,fontSize:"11px",marginLeft:"8px"}}>{c.d}</span>
+                  </div>
+                  <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px"}} onClick={function(){
+                    var updated = customCards.filter(function(_,j){return j!==i});
+                    setCustomCards(updated);
+                    saveCustomCards(updated);
+                  }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
+                </div>;
+              })}
+            </div> : null}
           </div> : null}
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"24px"})}>
