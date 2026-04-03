@@ -893,23 +893,19 @@ export default function SATVocab(){
           </div>
           {showAddCard ? <div>
             <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"12px"}}>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value)}}/>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Definition" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Synonyms (comma-separated)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
-              <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-                <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim}}>Type:</div>
-                <SegmentedControl options={[{value:"adj",label:"Adj"},{value:"n",label:"Noun"},{value:"v",label:"Verb"},{value:"adv",label:"Adv"}]} value={newPos} onChange={setNewPos}/>
-              </div>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter"&&newWord.trim()){var card={w:newWord.trim(),d:newDef.trim()||"",pos:newPos,t:"cards",syn:newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):[]};var updated=customCards.concat([card]);setCustomCards(updated);saveCustomCards(updated);setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");}}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Synonyms, comma-separated (optional)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
             </div>
-            <button style={Object.assign({},styles.btn,{width:"100%",opacity:newWord.trim()&&newDef.trim()?"1":"0.4"})} onClick={function(){
-              if(!newWord.trim()||!newDef.trim()) return;
-              var syns = newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean);
-              var card = {w:newWord.trim(),d:newDef.trim(),pos:newPos,t:"cards",syn:syns};
+            <button style={Object.assign({},styles.btn,{width:"100%",opacity:newWord.trim()?"1":"0.4"})} onClick={function(){
+              if(!newWord.trim()) return;
+              var syns = newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):[];
+              var card = {w:newWord.trim(),d:newDef.trim()||"",pos:newPos,t:"cards",syn:syns};
               var updated = customCards.concat([card]);
               setCustomCards(updated);
               saveCustomCards(updated);
               setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");
-            }} onMouseEnter={function(e){if(newWord.trim()&&newDef.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
+            }} onMouseEnter={function(e){if(newWord.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
             {customCards.length>0 ? <div style={{marginTop:"16px",borderTop:"1px solid "+C.cardBorder,paddingTop:"12px"}}>
               {customCards.map(function(c,i){
                 return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid "+C.cardBorder}}>
