@@ -653,6 +653,7 @@ export default function SATVocab(){
   var [judging, setJudging] = useState(false);
   var [customCards, setCustomCards] = useState(getCustomCards);
   var [showAddCard, setShowAddCard] = useState(false);
+  var [showCurrentWords, setShowCurrentWords] = useState(false);
   var [newWord, setNewWord] = useState("");
   var [newDef, setNewDef] = useState("");
   var [newPos, setNewPos] = useState("adj");
@@ -894,14 +895,28 @@ export default function SATVocab(){
               saveCustomCards(updated);
               setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");
             }} onMouseEnter={function(e){if(newWord.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
-            {customCards.length>0 ? <div style={{marginTop:"16px",borderTop:"1px solid "+C.cardBorder,paddingTop:"12px"}}>
+          </div> : null}
+          <div style={{marginTop:showAddCard?"16px":"0"}}>
+            <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:showCurrentWords?C.purple:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s",width:"100%"}}
+              onClick={function(){ setShowCurrentWords(!showCurrentWords); }}
+              onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
+              onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=showCurrentWords?C.purple:C.textDim}}>
+              {showCurrentWords?"Hide":"Current Words"} ({WORDS.filter(function(w){return w.t==="cards"}).length + customCards.length})
+            </button>
+            {showCurrentWords ? <div style={{marginTop:"12px",maxHeight:"400px",overflowY:"auto"}}>
+              {WORDS.filter(function(w){return w.t==="cards"}).map(function(c,i){
+                return <div key={"hw-"+i} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                  <span style={{color:C.white,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
+                  <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
+                </div>;
+              })}
               {customCards.map(function(c,i){
-                return <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid "+C.cardBorder}}>
-                  <div>
-                    <span style={{color:C.white,fontSize:"13px"}}>{c.w}</span>
-                    <span style={{color:C.textDim,fontSize:"11px",marginLeft:"8px"}}>{c.d}</span>
+                return <div key={"cc-"+i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                  <div style={{display:"flex",alignItems:"baseline",flex:1,minWidth:0}}>
+                    <span style={{color:C.purple,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
+                    <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
                   </div>
-                  <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px"}} onClick={function(){
+                  <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
                     var updated = customCards.filter(function(_,j){return j!==i});
                     setCustomCards(updated);
                     saveCustomCards(updated);
@@ -909,7 +924,7 @@ export default function SATVocab(){
                 </div>;
               })}
             </div> : null}
-          </div> : null}
+          </div>
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"24px"})}>
           <div style={styles.label}>Players</div>
