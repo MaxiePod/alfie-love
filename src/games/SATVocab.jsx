@@ -236,12 +236,18 @@ const WORDS = [
   {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"cards",syn:["trite","cliche","unoriginal","boring","dull","hackneyed","commonplace","stale","predictable"]},
 ];
 
-// ── Custom cards (localStorage) ──
+// ── Custom cards & deleted words (localStorage) ──
 function getCustomCards() {
   try { return JSON.parse(localStorage.getItem("lexicon_custom_cards") || "[]"); } catch(e) { return []; }
 }
 function saveCustomCards(cards) {
   localStorage.setItem("lexicon_custom_cards", JSON.stringify(cards));
+}
+function getDeletedWords() {
+  try { return JSON.parse(localStorage.getItem("lexicon_deleted_words") || "[]"); } catch(e) { return []; }
+}
+function saveDeletedWords(words) {
+  localStorage.setItem("lexicon_deleted_words", JSON.stringify(words));
 }
 
 const TIERS = [{value:"all",label:"All"},{value:"cards",label:"Cards"},{value:"easy",label:"Easy"},{value:"med",label:"Medium"},{value:"hard",label:"Hard"}];
@@ -652,6 +658,7 @@ export default function SATVocab(){
   var [typedAnswer, setTypedAnswer] = useState("");
   var [judging, setJudging] = useState(false);
   var [customCards, setCustomCards] = useState(getCustomCards);
+  var [deletedWords, setDeletedWords] = useState(getDeletedWords);
   var [showAddCard, setShowAddCard] = useState(false);
   var [showCurrentWords, setShowCurrentWords] = useState(false);
   var [newWord, setNewWord] = useState("");
@@ -681,7 +688,7 @@ export default function SATVocab(){
   useEffect(function(){ wordLogRef.current = wordLog; }, [wordLog]);
   useEffect(function(){ qIndexRef.current = qIndex; }, [qIndex]);
 
-  var allWords = useMemo(function(){ return WORDS.concat(customCards); }, [customCards]);
+  var allWords = useMemo(function(){ return WORDS.filter(function(w){ return deletedWords.indexOf(w.w)===-1; }).concat(customCards); }, [customCards, deletedWords]);
   var pool = useMemo(function(){ return tier==="all" ? allWords : allWords.filter(function(w){ return w.t===tier; }); }, [tier, allWords]);
   var totalAvailable = pool.length;
   var raceOptions = useMemo(function(){
@@ -897,33 +904,42 @@ export default function SATVocab(){
             }} onMouseEnter={function(e){if(newWord.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
           </div> : null}
           <div style={{marginTop:showAddCard?"16px":"0"}}>
-            <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:showCurrentWords?C.purple:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s",width:"100%"}}
-              onClick={function(){ setShowCurrentWords(!showCurrentWords); }}
-              onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
-              onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=showCurrentWords?C.purple:C.textDim}}>
-              {showCurrentWords?"Hide":"Current Words"} ({WORDS.filter(function(w){return w.t==="cards"}).length + customCards.length})
-            </button>
-            {showCurrentWords ? <div style={{marginTop:"12px",maxHeight:"400px",overflowY:"auto"}}>
-              {WORDS.filter(function(w){return w.t==="cards"}).map(function(c,i){
-                return <div key={"hw-"+i} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
-                  <span style={{color:C.white,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
-                  <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
-                </div>;
-              })}
-              {customCards.map(function(c,i){
-                return <div key={"cc-"+i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
-                  <div style={{display:"flex",alignItems:"baseline",flex:1,minWidth:0}}>
-                    <span style={{color:C.purple,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
-                    <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
-                  </div>
-                  <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
-                    var updated = customCards.filter(function(_,j){return j!==i});
-                    setCustomCards(updated);
-                    saveCustomCards(updated);
-                  }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
-                </div>;
-              })}
-            </div> : null}
+            {(function(){
+              var cardsPool = WORDS.filter(function(w){return w.t==="cards" && deletedWords.indexOf(w.w)===-1;});
+              var totalCount = cardsPool.length + customCards.length;
+              return <div>
+                <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:showCurrentWords?C.purple:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s",width:"100%"}}
+                  onClick={function(){ setShowCurrentWords(!showCurrentWords); }}
+                  onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
+                  onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=showCurrentWords?C.purple:C.textDim}}>
+                  {showCurrentWords?"Hide":"Current Words"} ({totalCount})
+                </button>
+                {showCurrentWords ? <div style={{marginTop:"12px",maxHeight:"400px",overflowY:"auto"}}>
+                  {cardsPool.map(function(c,i){
+                    return <div key={"hw-"+i} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                      <span style={{color:C.white,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
+                      <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
+                      <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
+                        var updated = deletedWords.concat([c.w]);
+                        setDeletedWords(updated);
+                        saveDeletedWords(updated);
+                      }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
+                    </div>;
+                  })}
+                  {customCards.map(function(c,i){
+                    return <div key={"cc-"+i} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
+                      <span style={{color:C.purple,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
+                      <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
+                      <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
+                        var updated = customCards.filter(function(_,j){return j!==i});
+                        setCustomCards(updated);
+                        saveCustomCards(updated);
+                      }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
+                    </div>;
+                  })}
+                </div> : null}
+              </div>;
+            })()}
           </div>
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"24px"})}>
