@@ -232,20 +232,8 @@ const WORDS = [
   {w:"Foreseeable",d:"Able to be predicted or expected",pos:"adj",t:"cards",syn:["predictable","expected","anticipated","likely","probable","imaginable","calculable"]},
   {w:"Discern",d:"To perceive or recognize something clearly",pos:"v",t:"cards",syn:["perceive","detect","recognize","distinguish","identify","notice","see","observe","spot","tell"]},
   {w:"Disavow",d:"To deny any responsibility or support for",pos:"v",t:"cards",syn:["deny","reject","disown","repudiate","renounce","disclaim","retract","disassociate"]},
-  {w:"Irreverence",d:"A lack of respect for things usually treated with seriousness",pos:"n",t:"cards",syn:["disrespect","impudence","cheekiness","flippancy","impertinence","mockery","insolence"]},
-  {w:"Jocular",d:"Fond of or characterized by joking; humorous",pos:"adj",t:"cards",syn:["humorous","funny","witty","playful","jovial","comical","lighthearted","amusing","facetious"]},
-  {w:"Amicable",d:"Having a spirit of friendliness; without serious disagreement",pos:"adj",t:"cards",syn:["friendly","cordial","harmonious","civil","pleasant","agreeable","cooperative","peaceable"]},
-  {w:"Genial",d:"Friendly and cheerful in manner",pos:"adj",t:"cards",syn:["friendly","cheerful","warm","affable","amiable","cordial","pleasant","good-natured","jovial"]},
-  {w:"Peculiar",d:"Strange or odd; unusual",pos:"adj",t:"cards",syn:["strange","odd","unusual","weird","bizarre","curious","eccentric","quirky","uncommon"]},
-  {w:"Paucity",d:"The presence of something in only small or insufficient quantities",pos:"n",t:"cards",syn:["scarcity","shortage","lack","dearth","insufficiency","deficiency","sparseness","rarity"]},
-  {w:"Mean",d:"Unwilling to give or share; unkind or spiteful",pos:"adj",t:"cards",syn:["unkind","cruel","spiteful","nasty","malicious","harsh","stingy","miserly","selfish"]},
-  {w:"Construe",d:"To interpret or understand in a particular way",pos:"v",t:"cards",syn:["interpret","understand","read","take","perceive","explain","deduce","infer","translate"]},
-  {w:"Constrain",d:"To compel or force toward a particular course of action",pos:"v",t:"cards",syn:["restrict","limit","restrain","confine","curb","inhibit","compel","force","bind"]},
   {w:"Superfluous",d:"More than what is needed; unnecessary",pos:"adj",t:"cards",syn:["unnecessary","excess","extra","redundant","unneeded","surplus","excessive","spare"]},
   {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"cards",syn:["trite","cliche","unoriginal","boring","dull","hackneyed","commonplace","stale","predictable"]},
-  {w:"Amiable",d:"Having a friendly and pleasant manner",pos:"adj",t:"cards",syn:["friendly","pleasant","likable","agreeable","warm","genial","good-natured","affable"]},
-  {w:"Garrulous",d:"Excessively talkative about trivial things",pos:"adj",t:"cards",syn:["talkative","chatty","loquacious","verbose","mouthy","gossipy","rambling","long-winded"]},
-  {w:"Maverick",d:"An independent-minded person",pos:"n",t:"cards",syn:["rebel","nonconformist","individualist","free spirit","dissenter","loner","renegade"]},
 ];
 
 // ── Custom cards (localStorage) ──
