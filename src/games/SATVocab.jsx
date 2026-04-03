@@ -889,15 +889,28 @@ export default function SATVocab(){
           </div>
           {showAddCard ? <div>
             <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"12px"}}>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter"&&newWord.trim()){var card={w:newWord.trim(),d:newDef.trim()||"",pos:newPos,t:"cards",syn:newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):[]};var updated=customCards.concat([card]);setCustomCards(updated);saveCustomCards(updated);setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");}}}/>
-              <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter"&&newWord.trim()){
+                var w=newWord.trim();
+                var existing=WORDS.find(function(x){return x.w.toLowerCase()===w.toLowerCase()});
+                var d=newDef.trim()||(existing?existing.d:"")||"";
+                var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(existing?existing.syn:[]);
+                var pos=existing?existing.pos:newPos;
+                var card={w:existing?existing.w:w,d:d,pos:pos,t:"cards",syn:syns};
+                var updated=customCards.concat([card]);setCustomCards(updated);saveCustomCards(updated);
+                setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");
+              }}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional — auto-fills if known)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Synonyms, comma-separated (optional)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
             </div>
             <button style={Object.assign({},styles.btn,{width:"100%",opacity:newWord.trim()?"1":"0.4"})} onClick={function(){
               if(!newWord.trim()) return;
-              var syns = newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):[];
-              var card = {w:newWord.trim(),d:newDef.trim()||"",pos:newPos,t:"cards",syn:syns};
-              var updated = customCards.concat([card]);
+              var w=newWord.trim();
+              var existing=WORDS.find(function(x){return x.w.toLowerCase()===w.toLowerCase()});
+              var d=newDef.trim()||(existing?existing.d:"")||"";
+              var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(existing?existing.syn:[]);
+              var pos=existing?existing.pos:newPos;
+              var card={w:existing?existing.w:w,d:d,pos:pos,t:"cards",syn:syns};
+              var updated=customCards.concat([card]);
               setCustomCards(updated);
               saveCustomCards(updated);
               setNewWord("");setNewDef("");setNewSyn("");setNewPos("adj");
