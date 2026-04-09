@@ -248,6 +248,8 @@ const WORDS = [
   {w:"Maverick",d:"An independent-minded person",pos:"n",t:"cards",syn:["rebel","nonconformist","individualist","free spirit","dissenter","loner","renegade"]},
   {w:"Stark",d:"Severe or bare in appearance; complete or sheer",pos:"adj",t:"cards",syn:["harsh","bare","bleak","grim","severe","sharp","utter","complete","absolute","desolate"]},
   {w:"Stagnate",d:"To cease developing; to become inactive or dull",pos:"v",t:"cards",syn:["stall","decline","idle","languish","deteriorate","vegetate","stand still","plateau"]},
+  {w:"Exigent",d:"Pressing; demanding immediate attention or action",pos:"adj",t:"cards",syn:["urgent","pressing","critical","imperative","acute","demanding","crucial","compelling"]},
+  {w:"Exorbitant",d:"Unreasonably high in price or amount",pos:"adj",t:"cards",syn:["excessive","extravagant","outrageous","steep","inflated","unreasonable","astronomical","overpriced"]},
 ];
 
 // ── SAT dictionary for auto-fill ──
