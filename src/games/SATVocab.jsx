@@ -219,6 +219,7 @@ const WORDS = [
   {w:"Predecessor",d:"A person who held a position before the current holder",pos:"n",t:"cards",syn:["forerunner","precursor","antecedent","former holder","ancestor","prior occupant"]},
   {w:"Precocious",d:"Unusually advanced or mature at an early age",pos:"adj",t:"cards",syn:["advanced","mature","gifted","talented","prodigious","bright","ahead","early developer"]},
   {w:"Bane",d:"A cause of great distress or annoyance",pos:"n",t:"cards",syn:["curse","plague","scourge","nuisance","torment","pest","ruin","affliction","nightmare"]},
+  {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"cards",syn:["trite","cliche","unoriginal","boring","dull","hackneyed","commonplace","stale","predictable"]},
   {w:"Juxtaposition",d:"The act of placing things close together for contrast",pos:"n",t:"cards",syn:["contrast","comparison","side by side","proximity","adjacency","pairing"]},
   {w:"Just",d:"Based on or behaving according to what is morally right and fair",pos:"adj",t:"cards",syn:["fair","righteous","equitable","moral","ethical","impartial","honorable","upright","virtuous"]},
   {w:"Complicit",d:"Involved with others in an unlawful or wrong activity",pos:"adj",t:"cards",syn:["involved","guilty","colluding","conspiring","accomplice","accessory","participating","in on it"]},
@@ -233,7 +234,6 @@ const WORDS = [
   {w:"Discern",d:"To perceive or recognize something clearly",pos:"v",t:"cards",syn:["perceive","detect","recognize","distinguish","identify","notice","see","observe","spot","tell"]},
   {w:"Disavow",d:"To deny any responsibility or support for",pos:"v",t:"cards",syn:["deny","reject","disown","repudiate","renounce","disclaim","retract","disassociate"]},
   {w:"Superfluous",d:"More than what is needed; unnecessary",pos:"adj",t:"cards",syn:["unnecessary","excess","extra","redundant","unneeded","surplus","excessive","spare"]},
-  {w:"Banal",d:"So lacking in originality as to be obvious",pos:"adj",t:"cards",syn:["trite","cliche","unoriginal","boring","dull","hackneyed","commonplace","stale","predictable"]},
   {w:"Irreverence",d:"A lack of respect for things usually treated with seriousness",pos:"n",t:"cards",syn:["disrespect","impudence","cheekiness","flippancy","impertinence","mockery","insolence"]},
   {w:"Jocular",d:"Fond of or characterized by joking; humorous",pos:"adj",t:"cards",syn:["humorous","funny","witty","playful","jovial","comical","lighthearted","amusing","facetious"]},
   {w:"Amicable",d:"Having a spirit of friendliness; without serious disagreement",pos:"adj",t:"cards",syn:["friendly","cordial","harmonious","civil","pleasant","agreeable","cooperative","peaceable"]},
@@ -250,6 +250,10 @@ const WORDS = [
   {w:"Stagnate",d:"To cease developing; to become inactive or dull",pos:"v",t:"cards",syn:["stall","decline","idle","languish","deteriorate","vegetate","stand still","plateau"]},
   {w:"Exigent",d:"Pressing; demanding immediate attention or action",pos:"adj",t:"cards",syn:["urgent","pressing","critical","imperative","acute","demanding","crucial","compelling"]},
   {w:"Exorbitant",d:"Unreasonably high in price or amount",pos:"adj",t:"cards",syn:["excessive","extravagant","outrageous","steep","inflated","unreasonable","astronomical","overpriced"]},
+  {w:"Quagmire",d:"A soft, boggy area of land; a complex or difficult situation",pos:"n",t:"cards",syn:["swamp","marsh","bog","predicament","dilemma","mess","morass","mire","muddle"]},
+  {w:"Quaint",d:"Attractively unusual or old-fashioned",pos:"adj",t:"cards",syn:["charming","picturesque","old-fashioned","queer","peculiar","whimsical","rustic","cute","antiquated"]},
+  {w:"Clout",d:"Influence or power, especially in politics or business",pos:"n",t:"cards",syn:["influence","power","authority","sway","pull","leverage","weight","standing"]},
+  {w:"Cloying",d:"Excessively sweet, sentimental, or flattering",pos:"adj",t:"cards",syn:["sickly","saccharine","nauseating","excessive","overdone","sugary","treacly","sentimental"]},
 ];
 
 // ── SAT dictionary for auto-fill ──
