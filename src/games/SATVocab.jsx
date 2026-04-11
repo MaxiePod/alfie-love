@@ -1325,6 +1325,12 @@ export default function SATVocab(){
                   onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=showCurrentWords?C.purple:C.textDim}}>
                   {showCurrentWords?"Hide":"Current Words"} ({totalCount})
                 </button>
+                {deletedWords.length>0 ? <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s",width:"100%",marginTop:"8px"}}
+                  onClick={function(){ setDeletedWords([]); saveDeletedWords([]); }}
+                  onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
+                  onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>
+                  Restore Deleted Words ({deletedWords.length})
+                </button> : null}
                 {showCurrentWords ? <div style={{marginTop:"12px",maxHeight:"400px",overflowY:"auto"}}>
                   {cardsPool.map(function(c,i){
                     return <div key={"hw-"+i} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
