@@ -240,7 +240,7 @@ const WORDS = [
   {w:"Genial",d:"Friendly and cheerful in manner",pos:"adj",t:"cards",syn:["friendly","cheerful","warm","affable","amiable","cordial","pleasant","good-natured","jovial"]},
   {w:"Peculiar",d:"Strange or odd; unusual",pos:"adj",t:"cards",syn:["strange","odd","unusual","weird","bizarre","curious","eccentric","quirky","uncommon"]},
   {w:"Paucity",d:"The presence of something in only small or insufficient quantities",pos:"n",t:"cards",syn:["scarcity","shortage","lack","dearth","insufficiency","deficiency","sparseness","rarity"]},
-  {w:"Mean",d:"Unwilling to give or share; unkind or spiteful",pos:"adj",t:"cards",syn:["unkind","cruel","spiteful","nasty","malicious","harsh","stingy","miserly","selfish"]},
+  {w:"Mean",d:"The average value; calculated by dividing the sum of values by their number",pos:"n",t:"cards",syn:["average","midpoint","median","norm","middle","center","standard","par"]},
   {w:"Construe",d:"To interpret or understand in a particular way",pos:"v",t:"cards",syn:["interpret","understand","read","take","perceive","explain","deduce","infer","translate"]},
   {w:"Constrain",d:"To compel or force toward a particular course of action",pos:"v",t:"cards",syn:["restrict","limit","restrain","confine","curb","inhibit","compel","force","bind"]},
   {w:"Amiable",d:"Having a friendly and pleasant manner",pos:"adj",t:"cards",syn:["friendly","pleasant","likable","agreeable","warm","genial","good-natured","affable"]},
