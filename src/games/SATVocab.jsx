@@ -1033,9 +1033,9 @@ export default function SATVocab(){
   var [mode, setMode] = useState("race");
   var [learnMode, setLearnMode] = useState(false);
   var [inputType, setInputType] = useState("choice");
-  var [tier, setTier] = useState("all");
+  var [tier, setTier] = useState("cards");
   var [numChoices, setNumChoices] = useState(4);
-  var [raceCount, setRaceCount] = useState(20);
+  var [raceCount, setRaceCount] = useState(9999);
   var [playerCount, setPlayerCount] = useState(1);
   var [playerNames, setPlayerNames] = useState(["Player 1"]);
   var [currentPlayerIdx, setCurrentPlayerIdx] = useState(0);
@@ -1094,7 +1094,7 @@ export default function SATVocab(){
     if(o.indexOf(totalAvailable)===-1) o.push(totalAvailable);
     return Array.from(new Set(o)).sort(function(a,b){ return a-b; });
   }, [totalAvailable]);
-  useEffect(function(){ if(raceCount>totalAvailable) setRaceCount(Math.min(20,totalAvailable)); }, [totalAvailable]);
+  useEffect(function(){ if(raceCount>totalAvailable) setRaceCount(totalAvailable); }, [totalAvailable]);
 
   var generateQuestions = useCallback(function(){
     var sh = shuffle(pool);
