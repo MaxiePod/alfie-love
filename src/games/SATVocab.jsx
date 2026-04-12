@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { getCurrentUser, setCurrentUser, loadProgress, saveProgress, applyAnswer, getMasteredBatches, MASTERY_THRESHOLD, BATCH_SIZE } from "../progress";
 
 const WORDS = [
   {w:"Benevolent",d:"Well-meaning and kindly",pos:"adj",t:"easy",syn:["kind","generous","charitable","compassionate","caring","good-hearted","altruistic","philanthropic","warm"]},
@@ -1059,6 +1060,16 @@ export default function SATVocab(){
   var [deletedWords, setDeletedWords] = useState(getDeletedWords);
   var [showAddCard, setShowAddCard] = useState(false);
   var [showCurrentWords, setShowCurrentWords] = useState(false);
+  var [userName, setUserName] = useState(getCurrentUser);
+  var [streaks, setStreaks] = useState({});
+  var [masteredOrder, setMasteredOrder] = useState([]);
+  var [progressLoaded, setProgressLoaded] = useState(false);
+  var [cardsView, setCardsView] = useState("active"); // "active" | "mastered-{batchIndex}"
+  var [nameInput, setNameInput] = useState("");
+  var streaksRef = useRef({});
+  var masteredOrderRef = useRef([]);
+  useEffect(function(){ streaksRef.current = streaks; }, [streaks]);
+  useEffect(function(){ masteredOrderRef.current = masteredOrder; }, [masteredOrder]);
   var [newWord, setNewWord] = useState("");
   var [newDef, setNewDef] = useState("");
   var [newPos, setNewPos] = useState("adj");
@@ -1086,8 +1097,46 @@ export default function SATVocab(){
   useEffect(function(){ wordLogRef.current = wordLog; }, [wordLog]);
   useEffect(function(){ qIndexRef.current = qIndex; }, [qIndex]);
 
+  // Load progress from Firestore whenever userName changes
+  useEffect(function(){
+    if(!userName){ setProgressLoaded(false); return; }
+    setProgressLoaded(false);
+    loadProgress(userName).then(function(p){
+      setStreaks(p.streaks);
+      setMasteredOrder(p.masteredOrder);
+      streaksRef.current = p.streaks;
+      masteredOrderRef.current = p.masteredOrder;
+      setProgressLoaded(true);
+    });
+  }, [userName]);
+
+  var masteredBatches = useMemo(function(){ return getMasteredBatches(masteredOrder); }, [masteredOrder]);
+
+  // When Cards tier is selected and cardsView is not in range (batches changed), reset to active
+  useEffect(function(){
+    if(cardsView !== "active" && cardsView.indexOf("mastered-")===0){
+      var idx = parseInt(cardsView.slice("mastered-".length),10);
+      if(!masteredBatches[idx]) setCardsView("active");
+    }
+  }, [masteredBatches, cardsView]);
+
   var allWords = useMemo(function(){ return WORDS.filter(function(w){ return deletedWords.indexOf(w.w)===-1; }).concat(customCards); }, [customCards, deletedWords]);
-  var pool = useMemo(function(){ return tier==="all" ? allWords : allWords.filter(function(w){ return w.t===tier; }); }, [tier, allWords]);
+  var pool = useMemo(function(){
+    if(tier==="all") return allWords;
+    if(tier!=="cards") return allWords.filter(function(w){ return w.t===tier; });
+    // Cards tier: split by cardsView
+    var allCards = allWords.filter(function(w){ return w.t==="cards"; });
+    if(cardsView === "active"){
+      return allCards.filter(function(w){ return masteredOrder.indexOf(w.w)===-1; });
+    }
+    if(cardsView.indexOf("mastered-")===0){
+      var idx = parseInt(cardsView.slice("mastered-".length),10);
+      var batch = masteredBatches[idx] || [];
+      var set = {}; batch.forEach(function(w){ set[w]=true; });
+      return allCards.filter(function(w){ return set[w.w]; });
+    }
+    return allCards;
+  }, [tier, cardsView, allWords, masteredOrder, masteredBatches]);
   var totalAvailable = pool.length;
   var raceOptions = useMemo(function(){
     var o = [10,15,20,25,40,50].filter(function(n){ return n<=totalAvailable; });
@@ -1150,6 +1199,17 @@ export default function SATVocab(){
       setMistakes(mistakesRef.current);
       setStreak(0);
     }
+
+    // Per-word streak tracking for Cards tier
+    if(userName && q.word.t==="cards"){
+      var isCorrect = (t.tier==="full" || t.tier==="partial");
+      var next = applyAnswer(streaksRef.current, masteredOrderRef.current, q.word.w, isCorrect);
+      streaksRef.current = next.streaks;
+      masteredOrderRef.current = next.masteredOrder;
+      setStreaks(next.streaks);
+      setMasteredOrder(next.masteredOrder);
+    }
+
     return t;
   };
 
@@ -1206,6 +1266,7 @@ export default function SATVocab(){
       avgScore: avg,
       totalAnswered: totalAnsweredRef.current,
     }]); });
+    if(userName) saveProgress(userName, streaksRef.current, masteredOrderRef.current);
     setTimeout(function(){ setScreen(currentPlayerIdx+1<playerCount ? "transition" : "results"); }, 1500);
   };
 
@@ -1225,6 +1286,7 @@ export default function SATVocab(){
       avgScore: avg,
       totalAnswered: totalAnsweredRef.current,
     }]); });
+    if(userName) saveProgress(userName, streaksRef.current, masteredOrderRef.current);
     if(currentPlayerIdx+1<playerCount) setScreen("transition"); else setScreen("results");
   };
 
@@ -1234,12 +1296,49 @@ export default function SATVocab(){
   var fontLink = <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500&family=Roboto+Mono:wght@100;300;400&display=swap" rel="stylesheet"/>;
   var pulseCSS = <style>{"@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}"}</style>;
 
+  // ══════ WHO'S PLAYING? ══════
+  if(!userName){
+    var submitName = function(){
+      var n = nameInput.trim();
+      if(!n) return;
+      setCurrentUser(n);
+      setUserName(n);
+    };
+    return(
+      <div style={styles.app}>{fontLink}{pulseCSS}
+        <div style={styles.title}>Lexicon</div>
+        <div style={styles.subtitle}>Who's playing?</div>
+        <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
+          <div style={styles.label}>Your name</div>
+          <input autoFocus value={nameInput} onChange={function(e){setNameInput(e.target.value)}}
+            onKeyDown={function(e){if(e.key==="Enter")submitName()}}
+            placeholder="e.g. Alfie" style={Object.assign({},styles.input,{width:"100%",marginTop:"8px"})}/>
+          <div style={{fontSize:"11px",color:C.textDim,marginTop:"8px"}}>Your progress syncs across devices.</div>
+          <button onClick={submitName} disabled={!nameInput.trim()} style={{
+            marginTop:"16px",width:"100%",background:nameInput.trim()?C.btnBg:C.cardBorder,
+            border:"1px solid "+C.inputBorder,color:C.white,padding:"12px",fontSize:"12px",
+            fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"2px",
+            textTransform:"uppercase",cursor:nameInput.trim()?"pointer":"not-allowed",borderRadius:"2px"
+          }}>Continue</button>
+        </div>
+      </div>
+    );
+  }
+
   // ══════ SETUP ══════
   if(screen==="setup"){
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={styles.title}>Lexicon</div>
         <div style={styles.subtitle}>{allWords.length} SAT vocabulary words</div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:"16px"}}>
+          <button onClick={function(){ setCurrentUser(""); setUserName(""); setNameInput(""); setStreaks({}); setMasteredOrder([]); }}
+            style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px"}}
+            onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
+            onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>
+            {userName} {progressLoaded ? "" : "\u2026"} \u00B7 Switch
+          </button>
+        </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={styles.label}>Game Mode</div>
           <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
@@ -1257,6 +1356,24 @@ export default function SATVocab(){
               <SegmentedControl options={TIERS} value={tier} onChange={setTier}/>
               <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{totalAvailable} words available</div>
             </div>
+            {tier==="cards" ? (function(){
+              var activeCount = allWords.filter(function(w){ return w.t==="cards" && masteredOrder.indexOf(w.w)===-1; }).length;
+              var viewOptions = [{value:"active",label:"Active ("+activeCount+")"}];
+              masteredBatches.forEach(function(b,i){
+                var lo = i*BATCH_SIZE+1;
+                var hi = i*BATCH_SIZE+b.length;
+                viewOptions.push({value:"mastered-"+i,label:"Mastered "+lo+"-"+hi});
+              });
+              return <div>
+                <div style={styles.label}>Cards View</div>
+                <SegmentedControl options={viewOptions} value={cardsView} onChange={setCardsView}/>
+                <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>
+                  {cardsView==="active"
+                    ? "Words you're still learning. Get one right "+MASTERY_THRESHOLD+" in a row to master it."
+                    : "Review mastered words. A miss drops the word back to Active."}
+                </div>
+              </div>;
+            })() : null}
             {inputType!=="type" ? <div>
               <div style={styles.label}>Number of Choices</div>
               <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
