@@ -1120,7 +1120,11 @@ export default function SATVocab(){
     }
   }, [masteredBatches, cardsView]);
 
-  var allWords = useMemo(function(){ return WORDS.filter(function(w){ return deletedWords.indexOf(w.w)===-1; }).concat(customCards); }, [customCards, deletedWords]);
+  var allWords = useMemo(function(){
+    return WORDS.filter(function(w){ return deletedWords.indexOf(w.w)===-1; })
+      .concat(customCards)
+      .filter(function(w){ return w && w.w && w.d && String(w.d).trim(); });
+  }, [customCards, deletedWords]);
   var pool = useMemo(function(){
     if(tier==="all") return allWords;
     if(tier!=="cards") return allWords.filter(function(w){ return w.t===tier; });
@@ -1408,6 +1412,7 @@ export default function SATVocab(){
                 var w=newWord.trim();
                 var found=lookupWord(w);
                 var d=newDef.trim()||(found?found.d:"")||"";
+                if(!d) return;
                 var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(found?found.syn:[]);
                 var pos=found?found.pos:"adj";
                 var card={w:found?found.w:w.charAt(0).toUpperCase()+w.slice(1),d:d,pos:pos,t:"cards",syn:syns};
@@ -1422,6 +1427,7 @@ export default function SATVocab(){
               var w=newWord.trim();
               var found=lookupWord(w);
               var d=newDef.trim()||(found?found.d:"")||"";
+              if(!d){ alert("Please enter a definition for \""+w+"\" \u2014 we don't have one on file."); return; }
               var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(found?found.syn:[]);
               var pos=found?found.pos:"adj";
               var card={w:found?found.w:w.charAt(0).toUpperCase()+w.slice(1),d:d,pos:pos,t:"cards",syn:syns};
