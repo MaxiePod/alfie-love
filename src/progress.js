@@ -4,6 +4,9 @@
 //   masteredOrder:   [word, ...]          — words mastered, in order mastered
 //   updatedAt:       serverTimestamp
 //
+// Custom cards are shared across all users at shared/customCards so that
+// when one family member adds a word, everyone sees it.
+//
 // A word is considered "mastered" once its streak reaches MASTERY_THRESHOLD.
 // Mastered words are grouped into batches of BATCH_SIZE for review.
 
@@ -86,4 +89,31 @@ export function getMasteredBatches(masteredOrder) {
     batches.push(masteredOrder.slice(i, i+BATCH_SIZE));
   }
   return batches;
+}
+
+// ── Shared custom cards ──
+// Stored at shared/customCards so all users see the same custom deck.
+
+export async function loadCustomCards() {
+  try {
+    var snap = await getDoc(doc(db, "shared", "customCards"));
+    if(snap.exists()){
+      var data = snap.data();
+      return Array.isArray(data.cards) ? data.cards : [];
+    }
+  } catch(e) {
+    console.error("loadCustomCards failed", e);
+  }
+  return [];
+}
+
+export async function saveCustomCardsRemote(cards) {
+  try {
+    await setDoc(doc(db, "shared", "customCards"), {
+      cards: cards,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch(e) {
+    console.error("saveCustomCardsRemote failed", e);
+  }
 }

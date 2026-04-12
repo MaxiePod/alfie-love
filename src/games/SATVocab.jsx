@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { getCurrentUser, setCurrentUser, loadProgress, saveProgress, applyAnswer, getMasteredBatches, MASTERY_THRESHOLD, BATCH_SIZE } from "../progress";
+import { getCurrentUser, setCurrentUser, loadProgress, saveProgress, applyAnswer, getMasteredBatches, loadCustomCards, saveCustomCardsRemote, MASTERY_THRESHOLD, BATCH_SIZE } from "../progress";
 
 const WORDS = [
   {w:"Benevolent",d:"Well-meaning and kindly",pos:"adj",t:"easy",syn:["kind","generous","charitable","compassionate","caring","good-hearted","altruistic","philanthropic","warm"]},
@@ -637,7 +637,13 @@ function lookupWord(w) {
 
 // ── Custom cards & deleted words (localStorage) ──
 function getCustomCards() {
-  try { return JSON.parse(localStorage.getItem("lexicon_custom_cards") || "[]"); } catch(e) { return []; }
+  try {
+    var raw = JSON.parse(localStorage.getItem("lexicon_custom_cards") || "[]");
+    // Sanitize: drop cards missing a word or definition (legacy bug)
+    var clean = raw.filter(function(c){ return c && c.w && c.d && String(c.d).trim(); });
+    if(clean.length !== raw.length) localStorage.setItem("lexicon_custom_cards", JSON.stringify(clean));
+    return clean;
+  } catch(e) { return []; }
 }
 function saveCustomCards(cards) {
   localStorage.setItem("lexicon_custom_cards", JSON.stringify(cards));
@@ -1110,6 +1116,23 @@ export default function SATVocab(){
     });
   }, [userName]);
 
+  // Load shared custom cards from Firestore once on mount.
+  // If remote is empty but local has cards, push local up. Otherwise use remote.
+  useEffect(function(){
+    loadCustomCards().then(function(remoteCards){
+      var localCards = getCustomCards();
+      var cleanRemote = (remoteCards||[]).filter(function(c){ return c && c.w && c.d && String(c.d).trim(); });
+      if(cleanRemote.length === 0 && localCards.length > 0){
+        // First sync: push local cards to remote
+        saveCustomCardsRemote(localCards);
+        return;
+      }
+      // Use remote as source of truth
+      setCustomCards(cleanRemote);
+      saveCustomCards(cleanRemote);
+    });
+  }, []);
+
   var masteredBatches = useMemo(function(){ return getMasteredBatches(masteredOrder); }, [masteredOrder]);
 
   // When Cards tier is selected and cardsView is not in range (batches changed), reset to active
@@ -1416,7 +1439,7 @@ export default function SATVocab(){
                 var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(found?found.syn:[]);
                 var pos=found?found.pos:"adj";
                 var card={w:found?found.w:w.charAt(0).toUpperCase()+w.slice(1),d:d,pos:pos,t:"cards",syn:syns};
-                var updated=customCards.concat([card]);setCustomCards(updated);saveCustomCards(updated);
+                var updated=customCards.concat([card]);setCustomCards(updated);saveCustomCards(updated);saveCustomCardsRemote(updated);
                 setNewWord("");setNewDef("");setNewSyn("");
               }}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional — auto-fills if known)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
@@ -1434,6 +1457,7 @@ export default function SATVocab(){
               var updated=customCards.concat([card]);
               setCustomCards(updated);
               saveCustomCards(updated);
+              saveCustomCardsRemote(updated);
               setNewWord("");setNewDef("");setNewSyn("");
             }} onMouseEnter={function(e){if(newWord.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
           </div> : null}
@@ -1474,6 +1498,7 @@ export default function SATVocab(){
                         var updated = customCards.filter(function(_,j){return j!==i});
                         setCustomCards(updated);
                         saveCustomCards(updated);
+                        saveCustomCardsRemote(updated);
                       }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
                     </div>;
                   })}
