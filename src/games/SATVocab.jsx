@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getCurrentUser, setCurrentUser, loadProgress, saveProgress, applyAnswer, getMasteredBatches, loadCustomCards, saveCustomCardsRemote, MASTERY_THRESHOLD, BATCH_SIZE } from "../progress";
+import { fetchDefinition } from "../dictionary";
 
 const WORDS = [
   {w:"Benevolent",d:"Well-meaning and kindly",pos:"adj",t:"easy",syn:["kind","generous","charitable","compassionate","caring","good-hearted","altruistic","philanthropic","warm"]},
@@ -1080,6 +1081,8 @@ export default function SATVocab(){
   var [newDef, setNewDef] = useState("");
   var [newPos, setNewPos] = useState("adj");
   var [newSyn, setNewSyn] = useState("");
+  var [addingCard, setAddingCard] = useState(false);
+  var [addError, setAddError] = useState("");
   var timeRef = useRef(0);
   var inputRef = useRef(null);
 
@@ -1319,6 +1322,46 @@ export default function SATVocab(){
 
   var fmtTime = function(t){ var tot=Math.floor(t); var m=Math.floor(tot/60000); var s=Math.floor((tot%60000)/1000); var cs=Math.floor((tot%1000)/10); return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+String(cs).padStart(2,"0"); };
 
+  // Handler for adding a custom card. Tries local dict first,
+  // then falls back to online dictionary API if needed.
+  var handleAddCard = async function(){
+    var w = newWord.trim();
+    if(!w || addingCard) return;
+    setAddError("");
+    var found = lookupWord(w);
+    var d = newDef.trim() || (found ? found.d : "") || "";
+    var pos = found ? found.pos : "adj";
+    var syns = newSyn ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
+
+    // If no definition yet, try the online dictionary
+    if(!d){
+      setAddingCard(true);
+      var remote = await fetchDefinition(w);
+      setAddingCard(false);
+      if(remote){
+        d = remote.d;
+        if(!found) pos = remote.pos;
+        if(!syns.length) syns = remote.syn;
+      } else {
+        setAddError("Couldn't find a definition for \""+w+"\". Please type one.");
+        return;
+      }
+    }
+
+    var card = {
+      w: found ? found.w : w.charAt(0).toUpperCase() + w.slice(1),
+      d: d,
+      pos: pos,
+      t: "cards",
+      syn: syns
+    };
+    var updated = customCards.concat([card]);
+    setCustomCards(updated);
+    saveCustomCards(updated);
+    saveCustomCardsRemote(updated);
+    setNewWord(""); setNewDef(""); setNewSyn(""); setAddError("");
+  };
+
   var currentQ = questions[qIndex];
   var fontLink = <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500&family=Roboto+Mono:wght@100;300;400&display=swap" rel="stylesheet"/>;
   var pulseCSS = <style>{"@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}"}</style>;
@@ -1431,35 +1474,12 @@ export default function SATVocab(){
           </div>
           {showAddCard ? <div>
             <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"12px"}}>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter"&&newWord.trim()){
-                var w=newWord.trim();
-                var found=lookupWord(w);
-                var d=newDef.trim()||(found?found.d:"")||"";
-                if(!d) return;
-                var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(found?found.syn:[]);
-                var pos=found?found.pos:"adj";
-                var card={w:found?found.w:w.charAt(0).toUpperCase()+w.slice(1),d:d,pos:pos,t:"cards",syn:syns};
-                var updated=customCards.concat([card]);setCustomCards(updated);saveCustomCards(updated);saveCustomCardsRemote(updated);
-                setNewWord("");setNewDef("");setNewSyn("");
-              }}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value); setAddError("");}} onKeyDown={function(e){if(e.key==="Enter")handleAddCard();}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional — auto-fills if known)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Synonyms, comma-separated (optional)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
             </div>
-            <button style={Object.assign({},styles.btn,{width:"100%",opacity:newWord.trim()?"1":"0.4"})} onClick={function(){
-              if(!newWord.trim()) return;
-              var w=newWord.trim();
-              var found=lookupWord(w);
-              var d=newDef.trim()||(found?found.d:"")||"";
-              if(!d){ alert("Please enter a definition for \""+w+"\" \u2014 we don't have one on file."); return; }
-              var syns=newSyn?newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean):(found?found.syn:[]);
-              var pos=found?found.pos:"adj";
-              var card={w:found?found.w:w.charAt(0).toUpperCase()+w.slice(1),d:d,pos:pos,t:"cards",syn:syns};
-              var updated=customCards.concat([card]);
-              setCustomCards(updated);
-              saveCustomCards(updated);
-              saveCustomCardsRemote(updated);
-              setNewWord("");setNewDef("");setNewSyn("");
-            }} onMouseEnter={function(e){if(newWord.trim())e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Add</button>
+            {addError ? <div style={{fontSize:"11px",color:C.red,marginBottom:"8px"}}>{addError}</div> : null}
+            <button disabled={addingCard||!newWord.trim()} style={Object.assign({},styles.btn,{width:"100%",opacity:(newWord.trim()&&!addingCard)?"1":"0.4",cursor:(newWord.trim()&&!addingCard)?"pointer":"not-allowed"})} onClick={handleAddCard} onMouseEnter={function(e){if(newWord.trim()&&!addingCard)e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>{addingCard?"Looking up\u2026":"Add"}</button>
           </div> : null}
           <div style={{marginTop:showAddCard?"16px":"0"}}>
             {(function(){
