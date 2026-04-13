@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { getCurrentUser, setCurrentUser, loadProgress, saveProgress, applyAnswer, getMasteredBatches, loadCustomCards, saveCustomCardsRemote, MASTERY_THRESHOLD, BATCH_SIZE } from "../progress";
+import { getCurrentUser, setCurrentUser, loadProgress, saveProgress, applyAnswer, getMasteredBatches, loadCustomCardsForDeck, saveCustomCardsForDeck, getDeckId, MASTERY_THRESHOLD, BATCH_SIZE } from "../progress";
 import { fetchDefinition } from "../dictionary";
 
 const WORDS = [
@@ -256,6 +256,10 @@ const WORDS = [
   {w:"Quaint",d:"Attractively unusual or old-fashioned",pos:"adj",t:"cards",syn:["charming","picturesque","old-fashioned","queer","peculiar","whimsical","rustic","cute","antiquated"]},
   {w:"Clout",d:"Influence or power, especially in politics or business",pos:"n",t:"cards",syn:["influence","power","authority","sway","pull","leverage","weight","standing"]},
   {w:"Cloying",d:"Excessively sweet, sentimental, or flattering",pos:"adj",t:"cards",syn:["sickly","saccharine","nauseating","excessive","overdone","sugary","treacly","sentimental"]},
+  {w:"Truncate",d:"To shorten by cutting off the top or end",pos:"v",t:"cards",syn:["shorten","cut","trim","abbreviate","curtail","crop","clip","abridge","reduce"]},
+  {w:"Trite",d:"Overused and lacking original thought",pos:"adj",t:"cards",syn:["cliche","hackneyed","stale","banal","unoriginal","stock","tired","worn-out","predictable","commonplace"]},
+  {w:"Diverge",d:"To separate from another route and go in a different direction",pos:"v",t:"cards",syn:["separate","split","branch","deviate","differ","part","fork","veer","stray","depart"]},
+  {w:"Diversification",d:"The act of varying or expanding into different forms or areas",pos:"n",t:"cards",syn:["variety","expansion","variation","broadening","spread","range","mix","assortment"]},
 ];
 
 // ── SAT dictionary for auto-fill ──
@@ -636,18 +640,21 @@ function lookupWord(w) {
   return null;
 }
 
-// ── Custom cards & deleted words (localStorage) ──
-function getCustomCards() {
+// ── Custom cards & deleted words (localStorage cache, keyed by deckId) ──
+function customCardsKey(deckId) {
+  return deckId ? "lexicon_custom_cards_" + deckId : "lexicon_custom_cards";
+}
+function getCustomCards(deckId) {
   try {
-    var raw = JSON.parse(localStorage.getItem("lexicon_custom_cards") || "[]");
+    var raw = JSON.parse(localStorage.getItem(customCardsKey(deckId)) || "[]");
     // Sanitize: drop cards missing a word or definition (legacy bug)
     var clean = raw.filter(function(c){ return c && c.w && c.d && String(c.d).trim(); });
-    if(clean.length !== raw.length) localStorage.setItem("lexicon_custom_cards", JSON.stringify(clean));
+    if(clean.length !== raw.length) localStorage.setItem(customCardsKey(deckId), JSON.stringify(clean));
     return clean;
   } catch(e) { return []; }
 }
-function saveCustomCards(cards) {
-  localStorage.setItem("lexicon_custom_cards", JSON.stringify(cards));
+function saveCustomCards(deckId, cards) {
+  localStorage.setItem(customCardsKey(deckId), JSON.stringify(cards));
 }
 function getDeletedWords() {
   try { return JSON.parse(localStorage.getItem("lexicon_deleted_words") || "[]"); } catch(e) { return []; }
@@ -1063,7 +1070,7 @@ export default function SATVocab(){
   var [gameOver, setGameOver] = useState(false);
   var [typedAnswer, setTypedAnswer] = useState("");
   var [judging, setJudging] = useState(false);
-  var [customCards, setCustomCards] = useState(getCustomCards);
+  var [customCards, setCustomCards] = useState(function(){ return getCustomCards(getDeckId(getCurrentUser())); });
   var [deletedWords, setDeletedWords] = useState(getDeletedWords);
   var [showAddCard, setShowAddCard] = useState(false);
   var [showCurrentWords, setShowCurrentWords] = useState(false);
@@ -1119,22 +1126,18 @@ export default function SATVocab(){
     });
   }, [userName]);
 
-  // Load shared custom cards from Firestore once on mount.
-  // If remote is empty but local has cards, push local up. Otherwise use remote.
+  // Load this user's deck from Firestore whenever userName changes.
+  // Show the local cache immediately, then reconcile with the remote deck.
+  var deckId = useMemo(function(){ return getDeckId(userName); }, [userName]);
   useEffect(function(){
-    loadCustomCards().then(function(remoteCards){
-      var localCards = getCustomCards();
+    if(!deckId){ setCustomCards([]); return; }
+    setCustomCards(getCustomCards(deckId));
+    loadCustomCardsForDeck(deckId).then(function(remoteCards){
       var cleanRemote = (remoteCards||[]).filter(function(c){ return c && c.w && c.d && String(c.d).trim(); });
-      if(cleanRemote.length === 0 && localCards.length > 0){
-        // First sync: push local cards to remote
-        saveCustomCardsRemote(localCards);
-        return;
-      }
-      // Use remote as source of truth
       setCustomCards(cleanRemote);
-      saveCustomCards(cleanRemote);
+      saveCustomCards(deckId, cleanRemote);
     });
-  }, []);
+  }, [deckId]);
 
   var masteredBatches = useMemo(function(){ return getMasteredBatches(masteredOrder); }, [masteredOrder]);
 
@@ -1359,8 +1362,8 @@ export default function SATVocab(){
     };
     var updated = customCards.concat([card]);
     setCustomCards(updated);
-    saveCustomCards(updated);
-    saveCustomCardsRemote(updated);
+    saveCustomCards(deckId, updated);
+    saveCustomCardsForDeck(deckId, updated);
     setNewWord(""); setNewDef(""); setNewSyn(""); setAddError("");
   };
 
@@ -1519,8 +1522,8 @@ export default function SATVocab(){
                       <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
                         var updated = customCards.filter(function(_,j){return j!==i});
                         setCustomCards(updated);
-                        saveCustomCards(updated);
-                        saveCustomCardsRemote(updated);
+                        saveCustomCards(deckId, updated);
+                        saveCustomCardsForDeck(deckId, updated);
                       }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
                     </div>;
                   })}

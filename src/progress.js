@@ -4,8 +4,11 @@
 //   masteredOrder:   [word, ...]          — words mastered, in order mastered
 //   updatedAt:       serverTimestamp
 //
-// Custom cards are shared across all users at shared/customCards so that
-// when one family member adds a word, everyone sees it.
+// Custom cards live at decks/{deckId}/cards. Each user belongs to a deck —
+// Max and Jaesun share the "family" deck so adds sync between them; everyone
+// else gets a private deck named after their userId. New decks are seeded
+// from the legacy shared/customCards doc on first load so every user starts
+// from the same baseline.
 //
 // A word is considered "mastered" once its streak reaches MASTERY_THRESHOLD.
 // Mastered words are grouped into batches of BATCH_SIZE for review.
@@ -91,10 +94,20 @@ export function getMasteredBatches(masteredOrder) {
   return batches;
 }
 
-// ── Shared custom cards ──
-// Stored at shared/customCards so all users see the same custom deck.
+// ── Per-deck custom cards ──
 
-export async function loadCustomCards() {
+// Users in this set share the "family" deck. Everyone else gets a private
+// deck named after their normalized userId.
+var FAMILY_DECK_USERS = ["max", "jaesun"];
+
+export function getDeckId(userName) {
+  var id = normalizeUserName(userName);
+  if(!id) return "";
+  if(FAMILY_DECK_USERS.indexOf(id) !== -1) return "family";
+  return id;
+}
+
+async function loadLegacySharedCards() {
   try {
     var snap = await getDoc(doc(db, "shared", "customCards"));
     if(snap.exists()){
@@ -102,18 +115,42 @@ export async function loadCustomCards() {
       return Array.isArray(data.cards) ? data.cards : [];
     }
   } catch(e) {
-    console.error("loadCustomCards failed", e);
+    console.error("loadLegacySharedCards failed", e);
   }
   return [];
 }
 
-export async function saveCustomCardsRemote(cards) {
+// Load custom cards for a deck. If the deck doc doesn't exist yet, seed it
+// from the legacy shared/customCards doc so the user starts from the
+// existing baseline.
+export async function loadCustomCardsForDeck(deckId) {
+  if(!deckId) return [];
   try {
-    await setDoc(doc(db, "shared", "customCards"), {
+    var snap = await getDoc(doc(db, "decks", deckId));
+    if(snap.exists()){
+      var data = snap.data();
+      return Array.isArray(data.cards) ? data.cards : [];
+    }
+    var seed = await loadLegacySharedCards();
+    await setDoc(doc(db, "decks", deckId), {
+      cards: seed,
+      updatedAt: serverTimestamp()
+    });
+    return seed;
+  } catch(e) {
+    console.error("loadCustomCardsForDeck failed", e);
+    return [];
+  }
+}
+
+export async function saveCustomCardsForDeck(deckId, cards) {
+  if(!deckId) return;
+  try {
+    await setDoc(doc(db, "decks", deckId), {
       cards: cards,
       updatedAt: serverTimestamp()
     }, { merge: true });
   } catch(e) {
-    console.error("saveCustomCardsRemote failed", e);
+    console.error("saveCustomCardsForDeck failed", e);
   }
 }
