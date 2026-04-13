@@ -1564,10 +1564,10 @@ export default function SATVocab(){
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={{width:"100%",maxWidth:"680px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"6px 14px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.3)",borderRadius:"2px"}}>
-            <div style={{width:"6px",height:"6px",borderRadius:"50%",background:C.purple}}/>
-            <span style={{fontSize:"14px",fontWeight:400,color:C.white,letterSpacing:"1px"}}>{userName}</span>
-            <span style={{fontSize:"10px",fontWeight:400,color:C.textDim,letterSpacing:"1px",textTransform:"uppercase"}}>{deckLabel}</span>
+          <div style={{display:"flex",alignItems:"center",gap:"14px",padding:"12px 22px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.5)",borderRadius:"3px"}}>
+            <div style={{width:"10px",height:"10px",borderRadius:"50%",background:C.purple}}/>
+            <span style={{fontSize:"22px",fontWeight:500,color:C.white,letterSpacing:"2px",textTransform:"uppercase"}}>{userName}</span>
+            <span style={{fontSize:"11px",fontWeight:400,color:C.purple,letterSpacing:"1.5px",textTransform:"uppercase"}}>{deckLabel}</span>
           </div>
           <button onClick={exitGame} style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"6px 14px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"}}
             onMouseEnter={function(e){e.target.style.borderColor=C.red;e.target.style.color=C.red}}
