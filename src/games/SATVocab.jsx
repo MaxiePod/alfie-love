@@ -1407,13 +1407,16 @@ export default function SATVocab(){
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={styles.title}>Lexicon</div>
         <div style={styles.subtitle}>{allWords.length} SAT vocabulary words</div>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:"16px"}}>
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"16px",marginBottom:"20px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"20px",padding:"24px 40px",background:C.purpleBg,border:"3px solid "+C.purple,borderRadius:"4px",boxShadow:"0 0 20px rgba(155,142,196,0.4)"}}>
+            <div style={{width:"16px",height:"16px",borderRadius:"50%",background:C.purple}}/>
+            <span style={{fontSize:"48px",fontWeight:500,color:C.white,letterSpacing:"3px",textTransform:"uppercase",lineHeight:1}}>{userName}{progressLoaded?"":"\u2026"}</span>
+            <span style={{fontSize:"14px",fontWeight:400,color:C.purple,letterSpacing:"2px",textTransform:"uppercase"}}>{deckLabel}</span>
+          </div>
           <button onClick={function(){ setCurrentUser(""); setUserName(""); setNameInput(""); setStreaks({}); setMasteredOrder([]); }}
-            style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px"}}
+            style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"6px 14px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px"}}
             onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
-            onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>
-            {userName} {progressLoaded ? "" : "\u2026"} \u00B7 {deckLabel} \u00B7 Switch
-          </button>
+            onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>Switch</button>
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={styles.label}>Game Mode</div>
