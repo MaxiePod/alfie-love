@@ -1129,6 +1129,7 @@ export default function SATVocab(){
   // Load this user's deck from Firestore whenever userName changes.
   // Show the local cache immediately, then reconcile with the remote deck.
   var deckId = useMemo(function(){ return getDeckId(userName); }, [userName]);
+  var deckLabel = deckId === "family" ? "Family Deck" : "My Deck";
   useEffect(function(){
     if(!deckId){ setCustomCards([]); return; }
     setCustomCards(getCustomCards(deckId));
@@ -1411,7 +1412,7 @@ export default function SATVocab(){
             style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px"}}
             onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
             onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>
-            {userName} {progressLoaded ? "" : "\u2026"} \u00B7 Switch
+            {userName} {progressLoaded ? "" : "\u2026"} \u00B7 {deckLabel} \u00B7 Switch
           </button>
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
@@ -1469,7 +1470,7 @@ export default function SATVocab(){
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showAddCard?"16px":"0"}}>
-            <div style={styles.label}>My Cards {customCards.length>0?"("+customCards.length+")":""}</div>
+            <div style={styles.label}>{deckLabel} {customCards.length>0?"("+customCards.length+")":""}</div>
             <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:showAddCard?C.purple:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s"}}
               onClick={function(){ setShowAddCard(!showAddCard); }}
               onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
@@ -1566,6 +1567,7 @@ export default function SATVocab(){
           <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"6px 14px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.3)",borderRadius:"2px"}}>
             <div style={{width:"6px",height:"6px",borderRadius:"50%",background:C.purple}}/>
             <span style={{fontSize:"14px",fontWeight:400,color:C.white,letterSpacing:"1px"}}>{userName}</span>
+            <span style={{fontSize:"10px",fontWeight:400,color:C.textDim,letterSpacing:"1px",textTransform:"uppercase"}}>{deckLabel}</span>
           </div>
           <button onClick={exitGame} style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"6px 14px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"}}
             onMouseEnter={function(e){e.target.style.borderColor=C.red;e.target.style.color=C.red}}
