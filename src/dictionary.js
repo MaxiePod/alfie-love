@@ -1,5 +1,10 @@
-// Online dictionary lookup via dictionaryapi.dev (free, no auth).
-// Returns { d, pos, syn } or null if the word isn't found.
+// Online dictionary lookup.
+//
+// Primary source: our own /api/define endpoint, which uses Claude to
+// produce SAT-quality definitions. Falls back to the free dictionaryapi.dev
+// API if the Claude endpoint is unavailable.
+//
+// Returns { w, d, pos, syn } or null if nothing was found.
 
 const POS_MAP = {
   noun: "n",
@@ -8,16 +13,35 @@ const POS_MAP = {
   adverb: "adv",
 };
 
-export async function fetchDefinition(word) {
-  var w = (word || "").trim();
-  if(!w) return null;
+async function fetchFromClaude(word) {
   try {
-    var res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(w));
+    var res = await fetch("/api/define", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word: word })
+    });
+    if(!res.ok) return null;
+    var data = await res.json();
+    if(!data || !data.d) return null;
+    return {
+      w: data.w,
+      d: data.d,
+      pos: data.pos || "adj",
+      syn: Array.isArray(data.syn) ? data.syn : []
+    };
+  } catch(e) {
+    console.error("fetchFromClaude failed", e);
+    return null;
+  }
+}
+
+async function fetchFromDictionaryApi(word) {
+  try {
+    var res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word));
     if(!res.ok) return null;
     var data = await res.json();
     if(!Array.isArray(data) || !data.length) return null;
 
-    // Flatten all meanings across entries
     var meanings = [];
     data.forEach(function(entry){
       (entry.meanings || []).forEach(function(m){
@@ -32,10 +56,8 @@ export async function fetchDefinition(word) {
     });
     if(!meanings.length) return null;
 
-    // Prefer the first meaning that isn't excessively long
     var pick = meanings.find(function(m){ return m.d && m.d.length < 140; }) || meanings[0];
     var posShort = POS_MAP[(pick.pos || "").toLowerCase()] || "adj";
-    // Dedupe synonyms and cap at 10
     var seen = {};
     var syns = [];
     (pick.syn || []).forEach(function(s){
@@ -43,12 +65,21 @@ export async function fetchDefinition(word) {
       if(k && !seen[k]){ seen[k] = true; syns.push(s); }
     });
     return {
+      w: word.charAt(0).toUpperCase() + word.slice(1),
       d: pick.d.trim(),
       pos: posShort,
       syn: syns.slice(0, 10)
     };
   } catch(e) {
-    console.error("fetchDefinition failed", e);
+    console.error("fetchFromDictionaryApi failed", e);
     return null;
   }
+}
+
+export async function fetchDefinition(word) {
+  var w = (word || "").trim();
+  if(!w) return null;
+  var viaClaude = await fetchFromClaude(w);
+  if(viaClaude) return viaClaude;
+  return await fetchFromDictionaryApi(w);
 }

@@ -1334,12 +1334,14 @@ export default function SATVocab(){
     var syns = newSyn ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
 
     // If no definition yet, try the online dictionary
+    var remoteWord = null;
     if(!d){
       setAddingCard(true);
       var remote = await fetchDefinition(w);
       setAddingCard(false);
       if(remote){
         d = remote.d;
+        if(remote.w) remoteWord = remote.w;
         if(!found) pos = remote.pos;
         if(!syns.length) syns = remote.syn;
       } else {
@@ -1349,7 +1351,7 @@ export default function SATVocab(){
     }
 
     var card = {
-      w: found ? found.w : w.charAt(0).toUpperCase() + w.slice(1),
+      w: found ? found.w : (remoteWord || (w.charAt(0).toUpperCase() + w.slice(1))),
       d: d,
       pos: pos,
       t: "cards",
