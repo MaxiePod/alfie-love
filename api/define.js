@@ -29,7 +29,12 @@ Rules for synonyms:
 - Use single words or short phrases
 - Avoid rare or archaic synonyms
 
-If the word is not a real English word, return an error-shaped response by leaving the definition empty.`;
+If the word is NOT a real English word (e.g. a brand name, typo, or made-up word):
+- Leave "definition" as an empty string
+- Leave "pos" as "n" and "synonyms" as an empty array
+- Set "suggestion" to the closest real English word the user likely meant (e.g. "epicurious" -> "epicurean"). If you have no good guess, leave "suggestion" as an empty string.
+
+If the word IS a real English word, leave "suggestion" as an empty string.`;
 
 // JSON schema for structured output — guarantees the shape we want
 const OUTPUT_SCHEMA = {
@@ -52,9 +57,13 @@ const OUTPUT_SCHEMA = {
       type: "array",
       items: { type: "string" },
       description: "6-10 common synonyms"
+    },
+    suggestion: {
+      type: "string",
+      description: "Closest real English word if the input is not a real word; empty string otherwise"
     }
   },
-  required: ["word", "definition", "pos", "synonyms"],
+  required: ["word", "definition", "pos", "synonyms", "suggestion"],
   additionalProperties: false
 };
 
@@ -112,7 +121,10 @@ export default async function handler(req, res) {
     }
 
     if(!parsed.definition || !parsed.definition.trim()){
-      res.status(404).json({ error: `No definition found for "${word}"` });
+      res.status(404).json({
+        error: `No definition found for "${word}"`,
+        suggestion: (parsed.suggestion || "").trim()
+      });
       return;
     }
 

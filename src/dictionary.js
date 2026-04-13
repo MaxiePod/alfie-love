@@ -20,8 +20,14 @@ async function fetchFromClaude(word) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ word: word })
     });
-    if(!res.ok) return null;
-    var data = await res.json();
+    var data = await res.json().catch(function(){ return null; });
+    if(!res.ok){
+      // 404 means Claude didn't recognize it; pass through any suggestion.
+      if(res.status === 404 && data && data.suggestion){
+        return { suggestion: data.suggestion };
+      }
+      return null;
+    }
     if(!data || !data.d) return null;
     return {
       w: data.w,
@@ -80,6 +86,10 @@ export async function fetchDefinition(word) {
   var w = (word || "").trim();
   if(!w) return null;
   var viaClaude = await fetchFromClaude(w);
-  if(viaClaude) return viaClaude;
-  return await fetchFromDictionaryApi(w);
+  if(viaClaude && viaClaude.d) return viaClaude;
+  var viaApi = await fetchFromDictionaryApi(w);
+  if(viaApi) return viaApi;
+  // Both lookups failed; bubble up Claude's suggestion if it had one.
+  if(viaClaude && viaClaude.suggestion) return { suggestion: viaClaude.suggestion };
+  return null;
 }

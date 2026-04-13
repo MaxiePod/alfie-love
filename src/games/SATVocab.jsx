@@ -1090,6 +1090,7 @@ export default function SATVocab(){
   var [newSyn, setNewSyn] = useState("");
   var [addingCard, setAddingCard] = useState(false);
   var [addError, setAddError] = useState("");
+  var [suggestedWord, setSuggestedWord] = useState("");
   var timeRef = useRef(0);
   var inputRef = useRef(null);
 
@@ -1328,14 +1329,15 @@ export default function SATVocab(){
 
   // Handler for adding a custom card. Tries local dict first,
   // then falls back to online dictionary API if needed.
-  var handleAddCard = async function(){
-    var w = newWord.trim();
+  var handleAddCard = async function(overrideWord){
+    var w = (overrideWord || newWord).trim();
     if(!w || addingCard) return;
     setAddError("");
+    setSuggestedWord("");
     var found = lookupWord(w);
-    var d = newDef.trim() || (found ? found.d : "") || "";
+    var d = (overrideWord ? "" : newDef.trim()) || (found ? found.d : "") || "";
     var pos = found ? found.pos : "adj";
-    var syns = newSyn ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
+    var syns = (!overrideWord && newSyn) ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
 
     // If no definition yet, try the online dictionary
     var remoteWord = null;
@@ -1343,11 +1345,15 @@ export default function SATVocab(){
       setAddingCard(true);
       var remote = await fetchDefinition(w);
       setAddingCard(false);
-      if(remote){
+      if(remote && remote.d){
         d = remote.d;
         if(remote.w) remoteWord = remote.w;
         if(!found) pos = remote.pos;
         if(!syns.length) syns = remote.syn;
+      } else if(remote && remote.suggestion){
+        setSuggestedWord(remote.suggestion);
+        setAddError("\""+w+"\" isn't in the dictionary.");
+        return;
       } else {
         setAddError("Couldn't find a definition for \""+w+"\". Please type one.");
         return;
@@ -1365,7 +1371,7 @@ export default function SATVocab(){
     setCustomCards(updated);
     saveCustomCards(deckId, updated);
     saveCustomCardsForDeck(deckId, updated);
-    setNewWord(""); setNewDef(""); setNewSyn(""); setAddError("");
+    setNewWord(""); setNewDef(""); setNewSyn(""); setAddError(""); setSuggestedWord("");
   };
 
   var currentQ = questions[qIndex];
@@ -1483,11 +1489,16 @@ export default function SATVocab(){
           </div>
           {showAddCard ? <div>
             <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"12px"}}>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value); setAddError("");}} onKeyDown={function(e){if(e.key==="Enter")handleAddCard();}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value); setAddError(""); setSuggestedWord("");}} onKeyDown={function(e){if(e.key==="Enter")handleAddCard();}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional — auto-fills if known)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Synonyms, comma-separated (optional)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
             </div>
             {addError ? <div style={{fontSize:"11px",color:C.red,marginBottom:"8px"}}>{addError}</div> : null}
+            {suggestedWord ? <div style={{fontSize:"12px",color:C.textDim,marginBottom:"8px"}}>
+              Did you mean{" "}
+              <button onClick={function(){ setNewWord(suggestedWord); handleAddCard(suggestedWord); }}
+                style={{background:"transparent",border:"none",color:C.purple,cursor:"pointer",fontSize:"12px",fontFamily:"inherit",padding:0,textDecoration:"underline"}}>{suggestedWord}</button>?
+            </div> : null}
             <button disabled={addingCard||!newWord.trim()} style={Object.assign({},styles.btn,{width:"100%",opacity:(newWord.trim()&&!addingCard)?"1":"0.4",cursor:(newWord.trim()&&!addingCard)?"pointer":"not-allowed"})} onClick={handleAddCard} onMouseEnter={function(e){if(newWord.trim()&&!addingCard)e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>{addingCard?"Looking up\u2026":"Add"}</button>
           </div> : null}
           <div style={{marginTop:showAddCard?"16px":"0"}}>
