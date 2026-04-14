@@ -1330,14 +1330,15 @@ export default function SATVocab(){
   // Handler for adding a custom card. Tries local dict first,
   // then falls back to online dictionary API if needed.
   var handleAddCard = async function(overrideWord){
-    var w = (overrideWord || newWord).trim();
+    var override = typeof overrideWord === "string" ? overrideWord : "";
+    var w = (override || newWord).trim();
     if(!w || addingCard) return;
     setAddError("");
     setSuggestedWord("");
     var found = lookupWord(w);
-    var d = (overrideWord ? "" : newDef.trim()) || (found ? found.d : "") || "";
+    var d = (override ? "" : newDef.trim()) || (found ? found.d : "") || "";
     var pos = found ? found.pos : "adj";
-    var syns = (!overrideWord && newSyn) ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
+    var syns = (!override && newSyn) ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
 
     // If no definition yet, try the online dictionary
     var remoteWord = null;
