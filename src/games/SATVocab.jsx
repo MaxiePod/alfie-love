@@ -1046,14 +1046,14 @@ function InfoTip(props){
   return (
     <span style={{position:"relative",display:"inline-flex",alignItems:"center",marginLeft:"8px",verticalAlign:"middle"}}>
       <button type="button" onClick={function(e){ e.stopPropagation(); setOpen(!open); }} aria-label="More info" style={{
-        width:"16px",height:"16px",padding:0,border:"1px solid "+(open?C.purple:C.inputBorder),
-        background:open?"rgba(155,142,196,0.15)":"transparent",color:open?C.purple:C.textDim,
+        width:"17px",height:"17px",padding:0,border:"1px solid "+(open?C.purple:C.textMuted),
+        background:open?"rgba(155,142,196,0.18)":"transparent",color:open?C.purple:C.text,
         borderRadius:"50%",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",
         fontFamily:"'Roboto Mono', monospace",fontWeight:600,fontSize:"10px",lineHeight:1,letterSpacing:0,
         textTransform:"none",transition:"all 0.15s",
       }}
         onMouseEnter={function(e){ if(!open){ e.currentTarget.style.borderColor=C.purple; e.currentTarget.style.color=C.purple; } }}
-        onMouseLeave={function(e){ if(!open){ e.currentTarget.style.borderColor=C.inputBorder; e.currentTarget.style.color=C.textDim; } }}>i</button>
+        onMouseLeave={function(e){ if(!open){ e.currentTarget.style.borderColor=C.textMuted; e.currentTarget.style.color=C.text; } }}>i</button>
       {open ? <div onClick={function(){ setOpen(false); }} style={{
         position:"absolute",top:"22px",left:"-4px",zIndex:50,
         width:"300px",maxWidth:"calc(100vw - 40px)",
@@ -1664,7 +1664,7 @@ export default function SATVocab(){
             <div>
               <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center"})}>
                 <span>Difficulty</span>
-                <InfoTip text="Easy, Medium, and Hard are curated SAT word lists. Family is your personal deck — you add cards to it and it tracks per-word streaks toward Mastery. All mixes every level together."/>
+                <InfoTip text="Easy, Medium, and Hard are curated SAT word lists — fixed pools you can't edit. Family is your own deck of cards: add words, auto-fill definitions, remove ones you don't want, and drill only those. Family is the only tier that tracks per-word streaks, Mastery, and Learn Wrongs. All mixes every level together."/>
               </div>
               <SegmentedControl options={TIERS} value={tier} onChange={setTier}/>
               <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{totalAvailable} words available</div>
@@ -1697,7 +1697,10 @@ export default function SATVocab(){
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showAddCard?"16px":"0"}}>
-            <div style={styles.label}>{deckLabel} {customCards.length>0?"("+customCards.length+")":""}</div>
+            <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center",marginBottom:0})}>
+              <span>{deckLabel} {customCards.length>0?"("+customCards.length+")":""}</span>
+              <InfoTip text={"Your own deck of cards. Type a word and the app auto-fills the SAT-style definition and synonyms — edit or delete any time. Your deck feeds the Family tier, so every custom card gets streak tracking, Mastery, and Learn Wrongs."+(deckId==="family"?" The Family deck is shared between Max and Jaesun — adds sync both ways.":"")}/>
+            </div>
             <button style={{background:"transparent",border:"1px solid "+C.inputBorder,color:showAddCard?C.purple:C.textDim,padding:"4px 12px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.15s"}}
               onClick={function(){ setShowAddCard(!showAddCard); }}
               onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
