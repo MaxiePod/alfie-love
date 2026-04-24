@@ -1555,15 +1555,26 @@ export default function SATVocab(){
           <div style={{fontSize:"12px",color:C.textMuted,marginTop:"8px"}}>{mode==="race"?"Answer a set number of words as fast as possible.":"How many can you get right? Three strikes and you're out."}</div>
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
-          <div style={{display:"flex",flexDirection:"column",gap:"20px"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
             <div>
               <div style={styles.label}>Direction</div>
               <SegmentedControl options={[{value:"w2d",label:"Word → Def"},{value:"d2w",label:"Def → Word"}]} value={direction} onChange={setDirection}/>
+              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{direction==="w2d" ? "You see the word. Answer with its definition." : "You see the definition. Answer with the word."}</div>
             </div>
             <div>
               <div style={styles.label}>Input</div>
               <SegmentedControl options={[{value:"choice",label:"Multiple Choice"},{value:"type",label:"Type It"}]} value={inputMode} onChange={setInputMode}/>
-              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{direction==="w2d" && inputMode==="type" ? "See the word, type its definition — AI scores how close you are (0–100%)." : direction==="w2d" && inputMode==="choice" ? "See the word, pick the correct definition." : direction==="d2w" && inputMode==="type" ? "See the definition, type the matching word." : "See the definition, pick the correct word."}</div>
+              {/* Sub-options that belong to Input — indented with a left rule for visual grouping */}
+              {!isTyped ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
+                <div style={styles.label}>Number of Choices</div>
+                <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
+              </div> : null}
+              {usesAI ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
+                <div style={styles.label}>Type What?</div>
+                <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Both"}]} value={typeTarget} onChange={setTypeTarget}/>
+                <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition. AI scores meaning match." : typeTarget==="sentence" ? "Use the word in a sentence. AI scores usage." : "Type both. Lower of the two scores counts — Final Frontier."}</div>
+              </div> : null}
+              {isTyped && direction==="d2w" ? <div style={{marginTop:"8px",fontSize:"11px",color:C.textDim}}>Type the word. Judged locally — typos and word-forms get partial credit.</div> : null}
             </div>
             <div>
               <div style={styles.label}>Difficulty</div>
@@ -1588,15 +1599,6 @@ export default function SATVocab(){
                 </div>
               </div>;
             })() : null}
-            {!isTyped ? <div>
-              <div style={styles.label}>Number of Choices</div>
-              <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
-            </div> : null}
-            {usesAI ? <div>
-              <div style={styles.label}>Type What?</div>
-              <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Final Frontier"}]} value={typeTarget} onChange={setTypeTarget}/>
-              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition — AI scores meaning." : typeTarget==="sentence" ? "Use the word in a sentence — AI scores usage." : "Final Frontier — type both a definition and a sentence. Lower of the two scores counts."}</div>
-            </div> : null}
           </div>
           {mode==="race" ? <div style={{marginTop:"20px"}}>
             <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
