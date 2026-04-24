@@ -11,28 +11,24 @@ const client = new Anthropic();
 
 // The system prompt is stable across every call, so we cache it.
 // With prompt caching, each call after the first pays ~0.1x for these tokens.
-const SYSTEM_PROMPT = `You are an SAT vocabulary assistant. Given a single English word, respond with a definition suitable for a high-school SAT study deck.
+const SYSTEM_PROMPT = `You are an SAT vocabulary assistant. Given a single English word, return one or more distinct SAT-relevant senses.
 
-Rules for the definition:
-- Use the most common / SAT-relevant sense of the word (not obscure or archaic meanings)
-- Keep it under 100 characters when possible
-- Write it as a definition phrase, not a sentence (e.g. "Unusually advanced for one's age" not "It means unusually advanced...")
-- Do not start with an article ("a", "the", "an") unless grammatically required
-- Do not repeat the word itself in the definition
+Rules for which senses to include in "senses":
+- Return each meaningfully different SAT-relevant sense as its own entry
+- Include different parts of speech when both are common (e.g. "intuitive" as adjective AND as noun)
+- Include distinctly different meanings within the same POS (e.g. "constitution" = founding document vs. physical health/makeup)
+- DO NOT split near-synonymous shadings into separate senses (e.g. "quaint" = charming-old-fashioned is ONE sense, don't sub-split)
+- DO NOT include archaic or rare senses
+- Prefer a single sense for most words; 2-3 only when the word is genuinely ambiguous. Never return more than 4.
 
-Rules for part of speech:
-- Use the most common part of speech for the SAT sense
-- Must be exactly one of: "n" (noun), "v" (verb), "adj" (adjective), "adv" (adverb)
-
-Rules for synonyms:
-- Provide 6-10 common synonyms that match the chosen sense
-- Use single words or short phrases
-- Avoid rare or archaic synonyms
+Rules for each sense:
+- definition: SAT-quality, under 100 characters when possible, phrase not sentence, no leading article unless grammatical, don't repeat the word
+- pos: exactly one of "n" (noun), "v" (verb), "adj" (adjective), "adv" (adverb)
+- synonyms: 6-10 common matching synonyms, single words or short phrases, avoid archaic
 
 If the word is NOT a real English word (e.g. a brand name, typo, or made-up word):
-- Leave "definition" as an empty string
-- Leave "pos" as "n" and "synonyms" as an empty array
-- Set "suggestion" to the closest real English word the user likely meant (e.g. "epicurious" -> "epicurean"). If you have no good guess, leave "suggestion" as an empty string.
+- Return an empty "senses" array
+- Set "suggestion" to the closest real English word the user likely meant (e.g. "epicurious" -> "epicurean"). If you have no good guess, leave it as an empty string.
 
 If the word IS a real English word, leave "suggestion" as an empty string.`;
 
@@ -44,26 +40,37 @@ const OUTPUT_SCHEMA = {
       type: "string",
       description: "The word, properly capitalized (title case)"
     },
-    definition: {
-      type: "string",
-      description: "SAT-quality definition under 100 characters when possible"
-    },
-    pos: {
-      type: "string",
-      enum: ["n", "v", "adj", "adv"],
-      description: "Part of speech abbreviation"
-    },
-    synonyms: {
+    senses: {
       type: "array",
-      items: { type: "string" },
-      description: "6-10 common synonyms"
+      description: "One entry per distinct SAT-relevant sense",
+      items: {
+        type: "object",
+        properties: {
+          definition: {
+            type: "string",
+            description: "SAT-quality definition under 100 characters when possible"
+          },
+          pos: {
+            type: "string",
+            enum: ["n", "v", "adj", "adv"],
+            description: "Part of speech abbreviation"
+          },
+          synonyms: {
+            type: "array",
+            items: { type: "string" },
+            description: "6-10 common synonyms for this sense"
+          }
+        },
+        required: ["definition", "pos", "synonyms"],
+        additionalProperties: false
+      }
     },
     suggestion: {
       type: "string",
       description: "Closest real English word if the input is not a real word; empty string otherwise"
     }
   },
-  required: ["word", "definition", "pos", "synonyms", "suggestion"],
+  required: ["word", "senses", "suggestion"],
   additionalProperties: false
 };
 
@@ -120,7 +127,8 @@ export default async function handler(req, res) {
       return;
     }
 
-    if(!parsed.definition || !parsed.definition.trim()){
+    const senses = Array.isArray(parsed.senses) ? parsed.senses.filter(s => s && s.definition && s.definition.trim()) : [];
+    if(!senses.length){
       res.status(404).json({
         error: `No definition found for "${word}"`,
         suggestion: (parsed.suggestion || "").trim()
@@ -130,9 +138,11 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       w: parsed.word,
-      d: parsed.definition,
-      pos: parsed.pos,
-      syn: Array.isArray(parsed.synonyms) ? parsed.synonyms.slice(0, 10) : []
+      senses: senses.slice(0, 4).map(s => ({
+        d: s.definition,
+        pos: s.pos,
+        syn: Array.isArray(s.synonyms) ? s.synonyms.slice(0, 10) : []
+      }))
     });
   } catch(err) {
     if(err instanceof Anthropic.APIError){

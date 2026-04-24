@@ -4,7 +4,7 @@
 // produce SAT-quality definitions. Falls back to the free dictionaryapi.dev
 // API if the Claude endpoint is unavailable.
 //
-// Returns { w, d, pos, syn } or null if nothing was found.
+// Returns { w, senses: [{d, pos, syn}, ...] } or { suggestion } or null.
 
 const POS_MAP = {
   noun: "n",
@@ -22,18 +22,21 @@ async function fetchFromClaude(word) {
     });
     var data = await res.json().catch(function(){ return null; });
     if(!res.ok){
-      // 404 means Claude didn't recognize it; pass through any suggestion.
       if(res.status === 404 && data && data.suggestion){
         return { suggestion: data.suggestion };
       }
       return null;
     }
-    if(!data || !data.d) return null;
+    if(!data || !Array.isArray(data.senses) || !data.senses.length) return null;
     return {
       w: data.w,
-      d: data.d,
-      pos: data.pos || "adj",
-      syn: Array.isArray(data.syn) ? data.syn : []
+      senses: data.senses.map(function(s){
+        return {
+          d: s.d,
+          pos: s.pos || "adj",
+          syn: Array.isArray(s.syn) ? s.syn : []
+        };
+      })
     };
   } catch(e) {
     console.error("fetchFromClaude failed", e);
@@ -62,19 +65,34 @@ async function fetchFromDictionaryApi(word) {
     });
     if(!meanings.length) return null;
 
-    var pick = meanings.find(function(m){ return m.d && m.d.length < 140; }) || meanings[0];
-    var posShort = POS_MAP[(pick.pos || "").toLowerCase()] || "adj";
-    var seen = {};
-    var syns = [];
-    (pick.syn || []).forEach(function(s){
-      var k = (s || "").toLowerCase().trim();
-      if(k && !seen[k]){ seen[k] = true; syns.push(s); }
+    // Build a senses list, one per POS, preferring short definitions.
+    var byPos = {};
+    meanings.forEach(function(m){
+      var posShort = POS_MAP[(m.pos || "").toLowerCase()] || "adj";
+      if(!m.d) return;
+      var existing = byPos[posShort];
+      if(!existing || (existing.d.length > 140 && m.d.length < 140)){
+        byPos[posShort] = { d: m.d.trim(), pos: posShort, syn: m.syn || [] };
+      }
     });
+    var senses = Object.keys(byPos).map(function(k){ return byPos[k]; }).slice(0, 4);
+    if(!senses.length){
+      var pick = meanings[0];
+      senses = [{ d: pick.d.trim(), pos: POS_MAP[(pick.pos||"").toLowerCase()] || "adj", syn: pick.syn || [] }];
+    }
+    senses = senses.map(function(s){
+      var seen = {};
+      var syns = [];
+      (s.syn || []).forEach(function(x){
+        var k = (x || "").toLowerCase().trim();
+        if(k && !seen[k]){ seen[k] = true; syns.push(x); }
+      });
+      return { d: s.d, pos: s.pos, syn: syns.slice(0, 10) };
+    });
+
     return {
       w: word.charAt(0).toUpperCase() + word.slice(1),
-      d: pick.d.trim(),
-      pos: posShort,
-      syn: syns.slice(0, 10)
+      senses: senses
     };
   } catch(e) {
     console.error("fetchFromDictionaryApi failed", e);
@@ -86,10 +104,9 @@ export async function fetchDefinition(word) {
   var w = (word || "").trim();
   if(!w) return null;
   var viaClaude = await fetchFromClaude(w);
-  if(viaClaude && viaClaude.d) return viaClaude;
+  if(viaClaude && viaClaude.senses) return viaClaude;
   var viaApi = await fetchFromDictionaryApi(w);
   if(viaApi) return viaApi;
-  // Both lookups failed; bubble up Claude's suggestion if it had one.
   if(viaClaude && viaClaude.suggestion) return { suggestion: viaClaude.suggestion };
   return null;
 }

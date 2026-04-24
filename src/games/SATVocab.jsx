@@ -1210,11 +1210,12 @@ export default function SATVocab(){
   useEffect(function(){ wrongsRef.current = wrongs; }, [wrongs]);
   var [newWord, setNewWord] = useState("");
   var [newDef, setNewDef] = useState("");
-  var [newPos, setNewPos] = useState("adj");
+  var [newPos, setNewPos] = useState("");
   var [newSyn, setNewSyn] = useState("");
   var [addingCard, setAddingCard] = useState(false);
   var [addError, setAddError] = useState("");
   var [suggestedWord, setSuggestedWord] = useState("");
+  var [pendingSenses, setPendingSenses] = useState(null);
   var timeRef = useRef(0);
   var inputRef = useRef(null);
 
@@ -1510,9 +1511,10 @@ export default function SATVocab(){
     if(!w || addingCard) return;
     setAddError("");
     setSuggestedWord("");
+    setPendingSenses(null);
     var found = lookupWord(w);
     var d = (override ? "" : newDef.trim()) || (found ? found.d : "") || "";
-    var pos = found ? found.pos : "adj";
+    var pos = newPos || (found ? found.pos : "adj");
     var syns = (!override && newSyn) ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
 
     // If no definition yet, try the online dictionary
@@ -1521,11 +1523,17 @@ export default function SATVocab(){
       setAddingCard(true);
       var remote = await fetchDefinition(w);
       setAddingCard(false);
-      if(remote && remote.d){
-        d = remote.d;
+      if(remote && remote.senses && remote.senses.length){
+        if(remote.senses.length > 1){
+          // Ambiguous — show the sense picker and wait for user to pick one.
+          setPendingSenses(remote.senses);
+          return;
+        }
+        var s0 = remote.senses[0];
+        d = s0.d;
         if(remote.w) remoteWord = remote.w;
-        if(!found) pos = remote.pos;
-        if(!syns.length) syns = remote.syn;
+        if(!found) pos = s0.pos;
+        if(!syns.length) syns = s0.syn;
       } else if(remote && remote.suggestion){
         setSuggestedWord(remote.suggestion);
         setAddError("\""+w+"\" isn't in the dictionary.");
@@ -1547,7 +1555,14 @@ export default function SATVocab(){
     setCustomCards(updated);
     saveCustomCards(deckId, updated);
     saveCustomCardsForDeck(deckId, updated);
-    setNewWord(""); setNewDef(""); setNewSyn(""); setAddError(""); setSuggestedWord("");
+    setNewWord(""); setNewDef(""); setNewPos(""); setNewSyn(""); setAddError(""); setSuggestedWord(""); setPendingSenses(null);
+  };
+
+  var pickSense = function(s){
+    setNewDef(s.d);
+    setNewPos(s.pos);
+    setNewSyn((s.syn || []).join(", "));
+    setPendingSenses(null);
   };
 
   var currentQ = questions[qIndex];
@@ -1710,7 +1725,7 @@ export default function SATVocab(){
           </div>
           {showAddCard ? <div>
             <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"12px"}}>
-              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value); setAddError(""); setSuggestedWord("");}} onKeyDown={function(e){if(e.key==="Enter")handleAddCard();}}/>
+              <input style={Object.assign({},styles.input,{fontSize:"14px",textAlign:"left"})} placeholder="Word" value={newWord} onChange={function(e){setNewWord(e.target.value); setAddError(""); setSuggestedWord(""); setPendingSenses(null); setNewPos("");}} onKeyDown={function(e){if(e.key==="Enter")handleAddCard();}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Definition (optional — auto-fills if known)" value={newDef} onChange={function(e){setNewDef(e.target.value)}}/>
               <input style={Object.assign({},styles.input,{fontSize:"13px",textAlign:"left",color:C.textMuted})} placeholder="Synonyms, comma-separated (optional)" value={newSyn} onChange={function(e){setNewSyn(e.target.value)}}/>
             </div>
@@ -1720,7 +1735,23 @@ export default function SATVocab(){
               <button onClick={function(){ setNewWord(suggestedWord); handleAddCard(suggestedWord); }}
                 style={{background:"transparent",border:"none",color:C.purple,cursor:"pointer",fontSize:"12px",fontFamily:"inherit",padding:0,textDecoration:"underline"}}>{suggestedWord}</button>?
             </div> : null}
-            <button disabled={addingCard||!newWord.trim()} style={Object.assign({},styles.btn,{width:"100%",opacity:(newWord.trim()&&!addingCard)?"1":"0.4",cursor:(newWord.trim()&&!addingCard)?"pointer":"not-allowed"})} onClick={handleAddCard} onMouseEnter={function(e){if(newWord.trim()&&!addingCard)e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>{addingCard?"Looking up\u2026":"Add"}</button>
+            {pendingSenses && pendingSenses.length > 1 ? <div style={{marginBottom:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
+              <div style={{fontSize:"11px",fontWeight:400,letterSpacing:"2px",textTransform:"uppercase",color:C.purple,marginBottom:"10px"}}>Which meaning?</div>
+              <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+                {pendingSenses.map(function(s, i){
+                  return (
+                    <button key={i} onClick={function(){ pickSense(s); }}
+                      style={{textAlign:"left",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.25)",borderRadius:"3px",padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:"10px",fontFamily:"inherit",color:C.text,transition:"all 0.15s"}}
+                      onMouseEnter={function(e){e.currentTarget.style.background="rgba(155,142,196,0.15)";e.currentTarget.style.borderColor="rgba(155,142,196,0.5)"}}
+                      onMouseLeave={function(e){e.currentTarget.style.background=C.purpleBg;e.currentTarget.style.borderColor="rgba(155,142,196,0.25)"}}>
+                      <span style={{flexShrink:0,fontSize:"10px",letterSpacing:"1.5px",textTransform:"uppercase",color:C.purple,minWidth:"46px",paddingTop:"2px"}}>{posLabel(s.pos)}</span>
+                      <span style={{fontSize:"13px",lineHeight:"1.35",color:C.text}}>{s.d}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div> : null}
+            <button disabled={addingCard||!newWord.trim()||(pendingSenses&&pendingSenses.length>1)} style={Object.assign({},styles.btn,{width:"100%",opacity:(newWord.trim()&&!addingCard&&!(pendingSenses&&pendingSenses.length>1))?"1":"0.4",cursor:(newWord.trim()&&!addingCard&&!(pendingSenses&&pendingSenses.length>1))?"pointer":"not-allowed"})} onClick={handleAddCard} onMouseEnter={function(e){if(newWord.trim()&&!addingCard&&!(pendingSenses&&pendingSenses.length>1))e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>{addingCard?"Looking up\u2026":"Add"}</button>
           </div> : null}
           <div style={{marginTop:showAddCard?"16px":"0"}}>
             {(function(){
