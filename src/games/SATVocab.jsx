@@ -981,6 +981,7 @@ var styles = {
   title:{fontSize:"32px",fontWeight:100,letterSpacing:"8px",textTransform:"uppercase",marginBottom:"4px",color:C.white},
   subtitle:{fontSize:"11px",letterSpacing:"4px",textTransform:"uppercase",color:C.textMuted,marginBottom:"40px"},
   card:{background:C.card,border:"1px solid "+C.cardBorder,borderRadius:"3px",padding:"24px 20px",width:"100%",maxWidth:"680px",boxSizing:"border-box"},
+  cardTitle:{fontSize:"15px",fontWeight:400,letterSpacing:"3px",textTransform:"uppercase",color:C.white,marginBottom:"18px",paddingBottom:"12px",borderBottom:"1px solid "+C.cardBorder},
   label:{fontSize:"10px",letterSpacing:"3px",textTransform:"uppercase",color:C.textMuted,marginBottom:"10px",display:"block"},
   btn:{background:C.btnBg,color:C.btnText,border:"none",padding:"14px 32px",fontSize:"12px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"3px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"},
   btnOutline:{background:"transparent",color:C.text,border:"1px solid "+C.inputBorder,padding:"10px 20px",fontSize:"11px",fontFamily:"'Roboto', sans-serif",fontWeight:300,letterSpacing:"2px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px",transition:"all 0.2s"},
@@ -1550,11 +1551,7 @@ export default function SATVocab(){
           <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.5"}}>Anthropic credit balance is empty. Typed answers will use basic scoring until you add credits at <span style={{color:C.purple}}>console.anthropic.com</span>.</div>
         </div> : null}
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
-          <div style={styles.label}>Game Mode</div>
-          <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
-          <div style={{fontSize:"12px",color:C.textMuted,marginTop:"8px"}}>{mode==="race"?"Answer a set number of words as fast as possible.":"How many can you get right? Three strikes and you're out."}</div>
-        </div>
-        <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
+          <div style={styles.cardTitle}>Question Style</div>
           <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
             <div>
               <div style={styles.label}>Direction</div>
@@ -1573,45 +1570,52 @@ export default function SATVocab(){
                 <div style={styles.label}>Type What?</div>
                 <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Both"}]} value={typeTarget} onChange={setTypeTarget}/>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition. AI scores meaning match." : typeTarget==="sentence" ? "Use the word in a sentence. AI scores usage." : "Type both. Lower of the two scores counts — Final Frontier."}</div>
+                <div style={{fontSize:"11px",color:C.textDim,marginTop:"4px"}}>
+                  <span style={{color:C.green}}>70-100%</span>{" full · "}
+                  <span style={{color:C.gold}}>40-69%</span>{" partial · "}
+                  <span style={{color:C.red}}>0-39%</span>{" miss"}
+                </div>
               </div> : null}
               {isTyped && direction==="d2w" ? <div style={{marginTop:"8px",fontSize:"11px",color:C.textDim}}>Type the word. Judged locally — typos and word-forms get partial credit.</div> : null}
+            </div>
+          </div>
+        </div>
+        <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
+          <div style={styles.cardTitle}>Round</div>
+          <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
+            <div>
+              <div style={styles.label}>Game Mode</div>
+              <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
+              <div style={{fontSize:"12px",color:C.textMuted,marginTop:"8px"}}>{mode==="race"?"Answer a set number of words as fast as possible.":"How many can you get right? Three strikes and you're out."}</div>
+              {mode==="race" ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
+                <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
+                <SegmentedControl options={raceOptions.map(function(n){ return {value:n,label:n===totalAvailable?"All "+n:String(n)}; })} value={raceCount} onChange={setRaceCount}/>
+              </div> : null}
             </div>
             <div>
               <div style={styles.label}>Difficulty</div>
               <SegmentedControl options={TIERS} value={tier} onChange={setTier}/>
               <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{totalAvailable} words available</div>
+              {tier==="cards" ? (function(){
+                var activeCount = allWords.filter(function(w){ return w.t==="cards" && masteredOrder.indexOf(w.w)===-1; }).length;
+                var viewOptions = [{value:"active",label:"Active ("+activeCount+")"}];
+                masteredBatches.forEach(function(b,i){
+                  var lo = i*BATCH_SIZE+1;
+                  var hi = i*BATCH_SIZE+b.length;
+                  viewOptions.push({value:"mastered-"+i,label:"Mastered "+lo+"-"+hi});
+                });
+                return <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
+                  <div style={styles.label}>Cards View</div>
+                  <SegmentedControl options={viewOptions} value={cardsView} onChange={setCardsView}/>
+                  <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>
+                    {cardsView==="active"
+                      ? "Words you're still learning. Get one right "+MASTERY_THRESHOLD+" in a row to master it."
+                      : "Review mastered words. A miss drops the word back to Active."}
+                  </div>
+                </div>;
+              })() : null}
             </div>
-            {tier==="cards" ? (function(){
-              var activeCount = allWords.filter(function(w){ return w.t==="cards" && masteredOrder.indexOf(w.w)===-1; }).length;
-              var viewOptions = [{value:"active",label:"Active ("+activeCount+")"}];
-              masteredBatches.forEach(function(b,i){
-                var lo = i*BATCH_SIZE+1;
-                var hi = i*BATCH_SIZE+b.length;
-                viewOptions.push({value:"mastered-"+i,label:"Mastered "+lo+"-"+hi});
-              });
-              return <div>
-                <div style={styles.label}>Cards View</div>
-                <SegmentedControl options={viewOptions} value={cardsView} onChange={setCardsView}/>
-                <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>
-                  {cardsView==="active"
-                    ? "Words you're still learning. Get one right "+MASTERY_THRESHOLD+" in a row to master it."
-                    : "Review mastered words. A miss drops the word back to Active."}
-                </div>
-              </div>;
-            })() : null}
           </div>
-          {mode==="race" ? <div style={{marginTop:"20px"}}>
-            <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
-            <SegmentedControl options={raceOptions.map(function(n){ return {value:n,label:n===totalAvailable?"All "+n:String(n)}; })} value={raceCount} onChange={setRaceCount}/>
-          </div> : null}
-          {usesAI ? <div style={{marginTop:"20px",padding:"12px 16px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.15)",borderRadius:"2px"}}>
-            <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.purple,marginBottom:"6px"}}>Scoring</div>
-            <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.6"}}>
-              <span style={{color:C.green}}>70-100%</span>{" = Full credit (1 pt)  \u00B7  "}
-              <span style={{color:C.gold}}>40-69%</span>{" = Partial (0.5 pt)  \u00B7  "}
-              <span style={{color:C.red}}>0-39%</span>{" = Miss (burns a life)"}
-            </div>
-          </div> : null}
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showAddCard?"16px":"0"}}>
