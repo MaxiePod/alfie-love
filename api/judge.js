@@ -99,10 +99,15 @@ export default async function handler(req, res){
     const note = String(parsed.note || "").trim().slice(0, 80);
     res.status(200).json({ score, note });
   } catch(err){
-    // Surface the real error so we can diagnose from the response body
     const message = err && err.message ? err.message : String(err);
     const status = (err && err.status) || 500;
     console.error("judge handler error", status, message);
+    // Surface credit-balance errors with a distinct code so the client can
+    // switch to offline scoring and show an "add credits" banner.
+    if(/credit balance is too low/i.test(message)){
+      res.status(402).json({ error: "credits_exhausted", message });
+      return;
+    }
     res.status(500).json({ error: message, status });
   }
 }

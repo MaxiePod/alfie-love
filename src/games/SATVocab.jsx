@@ -893,9 +893,8 @@ function offlineJudge(wordEntry, userAnswer) {
   return { score: bestScore, note: bestNote };
 }
 
-async function aiJudge(word, correctDef, userAnswer, wordEntry) {
+async function aiJudge(word, correctDef, userAnswer, wordEntry, onAiUnavailable) {
   var offline = offlineJudge(wordEntry, userAnswer);
-  // Fast path: offline judge already finds a strong match — no need to spend an API call
   if (offline.score >= 80) return offline;
 
   try {
@@ -904,15 +903,51 @@ async function aiJudge(word, correctDef, userAnswer, wordEntry) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ word: word, definition: correctDef, answer: userAnswer })
     });
+    if (res.status === 402) {
+      if (onAiUnavailable) onAiUnavailable();
+      return offline;
+    }
     if (!res.ok) return offline;
     var data = await res.json();
     if (typeof data.score !== "number") return offline;
-    // Keep whichever is higher so the AI can never downgrade a valid exact synonym hit
     if (data.score > offline.score) return { score: Math.round(data.score), note: data.note || "AI judged" };
     return offline;
   } catch (e) {
     return offline;
   }
+}
+
+// Levenshtein distance — small, used only for typing-the-word mode
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  var row = [];
+  for (var i = 0; i <= b.length; i++) row[i] = i;
+  for (var i = 1; i <= a.length; i++) {
+    var prev = i;
+    for (var j = 1; j <= b.length; j++) {
+      var val = a.charCodeAt(i-1) === b.charCodeAt(j-1) ? row[j-1] : Math.min(row[j-1], Math.min(prev, row[j])) + 1;
+      row[j-1] = prev; prev = val;
+    }
+    row[b.length] = prev;
+  }
+  return row[b.length];
+}
+
+// Judge the def→word typing mode: user types the target word (or close variant)
+function wordMatchJudge(targetWord, userAnswer) {
+  var target = normalizeWord(targetWord);
+  var user = normalizeWord(userAnswer);
+  if (!user) return { score: 0, note: "Empty answer" };
+  if (user === target) return { score: 100, note: "Exact match" };
+  var tStem = stemWord(target);
+  var uStem = stemWord(user);
+  if (tStem.length >= 3 && uStem.length >= 3 && tStem === uStem) return { score: 90, note: "Same root word" };
+  var dist = levenshtein(target, user);
+  if (dist === 1 && target.length >= 4) return { score: 80, note: "Close — typo?" };
+  if (dist === 2 && target.length >= 6) return { score: 60, note: "Close — typo?" };
+  return { score: 0, note: "Wrong word" };
 }
 
 var C = {
@@ -1065,7 +1100,13 @@ export default function SATVocab(){
   var [screen, setScreen] = useState("setup");
   var [mode, setMode] = useState("race");
   var [learnMode, setLearnMode] = useState(false);
-  var [inputType, setInputType] = useState("choice");
+  var [direction, setDirection] = useState("w2d"); // "w2d" = word→def, "d2w" = def→word
+  var [inputMode, setInputMode] = useState("choice"); // "choice" = multiple choice, "type" = typed
+  var [aiUnavailable, setAiUnavailable] = useState(false);
+  // Back-compat shim: keep isTyped/isReverse/usesAI derived so the existing render logic is cleaner.
+  var isTyped = inputMode === "type";
+  var isReverse = direction === "d2w"; // prompt shows the definition
+  var usesAI = direction === "w2d" && inputMode === "type"; // only w2d+type goes through /api/judge
   var [tier, setTier] = useState("cards");
   var [numChoices, setNumChoices] = useState(4);
   var [raceCount, setRaceCount] = useState(9999);
@@ -1224,8 +1265,8 @@ export default function SATVocab(){
   };
 
   useEffect(function(){
-    if(screen==="playing" && inputType==="type" && !answered && !judging && inputRef.current) inputRef.current.focus();
-  }, [qIndex, screen, inputType, answered, judging]);
+    if(screen==="playing" && isTyped && !answered && !judging && inputRef.current) inputRef.current.focus();
+  }, [qIndex, screen, isTyped, answered, judging]);
 
   var processResult = function(score, q, yourAnswer){
     var t = scoreTier(score);
@@ -1295,9 +1336,16 @@ export default function SATVocab(){
   var handleTypedSubmit = async function(){
     if(answered || judging || !typedAnswer.trim()) return;
     var q = questions[qIndex];
-    setTimerRunning(false); setJudging(true);
-    var result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim(), q.word);
-    setTimerRunning(true); setJudging(false);
+    var result;
+    if(direction === "d2w"){
+      // Typed the WORD given its definition — straight spelling/stem match, no API call
+      result = wordMatchJudge(q.word.w, typedAnswer.trim());
+    } else {
+      // Typed a DEFINITION for the word — AI-scored (offline fallback inside aiJudge)
+      setTimerRunning(false); setJudging(true);
+      result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim(), q.word, function(){ setAiUnavailable(true); });
+      setTimerRunning(true); setJudging(false);
+    }
     var t = processResult(result.score, q, typedAnswer.trim());
     setAnswered({score:result.score, note:result.note});
     advanceAfterAnswer(t.tier==="miss", questions.length);
@@ -1443,6 +1491,10 @@ export default function SATVocab(){
             onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
             onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>Switch</button>
         </div>
+        {aiUnavailable ? <div style={{width:"100%",maxWidth:"680px",boxSizing:"border-box",padding:"12px 16px",marginBottom:"16px",background:C.redBg,border:"1px solid "+C.red,borderRadius:"2px"}}>
+          <div style={{fontSize:"11px",letterSpacing:"2px",textTransform:"uppercase",color:C.red,marginBottom:"4px"}}>AI scoring unavailable</div>
+          <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.5"}}>Anthropic credit balance is empty. Typed answers will use basic scoring until you add credits at <span style={{color:C.purple}}>console.anthropic.com</span>.</div>
+        </div> : null}
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={styles.label}>Game Mode</div>
           <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
@@ -1451,9 +1503,13 @@ export default function SATVocab(){
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
           <div style={{display:"flex",flexDirection:"column",gap:"20px"}}>
             <div>
-              <div style={styles.label}>Input Method</div>
-              <SegmentedControl options={[{value:"choice",label:"Word \u2192 Def"},{value:"reverse",label:"Def \u2192 Word"},{value:"type",label:"Type It"}]} value={inputType} onChange={setInputType}/>
-              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{inputType==="type"?"Type any definition — AI scores how close you are (0-100%).":inputType==="reverse"?"See the definition, pick the correct word.":"See the word, pick the correct definition."}</div>
+              <div style={styles.label}>Direction</div>
+              <SegmentedControl options={[{value:"w2d",label:"Word → Def"},{value:"d2w",label:"Def → Word"}]} value={direction} onChange={setDirection}/>
+            </div>
+            <div>
+              <div style={styles.label}>Input</div>
+              <SegmentedControl options={[{value:"choice",label:"Multiple Choice"},{value:"type",label:"Type It"}]} value={inputMode} onChange={setInputMode}/>
+              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{direction==="w2d" && inputMode==="type" ? "See the word, type its definition — AI scores how close you are (0–100%)." : direction==="w2d" && inputMode==="choice" ? "See the word, pick the correct definition." : direction==="d2w" && inputMode==="type" ? "See the definition, type the matching word." : "See the definition, pick the correct word."}</div>
             </div>
             <div>
               <div style={styles.label}>Difficulty</div>
@@ -1478,7 +1534,7 @@ export default function SATVocab(){
                 </div>
               </div>;
             })() : null}
-            {inputType!=="type" ? <div>
+            {!isTyped ? <div>
               <div style={styles.label}>Number of Choices</div>
               <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
             </div> : null}
@@ -1487,7 +1543,7 @@ export default function SATVocab(){
             <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
             <SegmentedControl options={raceOptions.map(function(n){ return {value:n,label:n===totalAvailable?"All "+n:String(n)}; })} value={raceCount} onChange={setRaceCount}/>
           </div> : null}
-          {inputType==="type" ? <div style={{marginTop:"20px",padding:"12px 16px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.15)",borderRadius:"2px"}}>
+          {usesAI ? <div style={{marginTop:"20px",padding:"12px 16px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.15)",borderRadius:"2px"}}>
             <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.purple,marginBottom:"6px"}}>Scoring</div>
             <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.6"}}>
               <span style={{color:C.green}}>70-100%</span>{" = Full credit (1 pt)  \u00B7  "}
@@ -1589,7 +1645,7 @@ export default function SATVocab(){
 
   // ══════ PLAYING ══════
   if(screen==="playing"){
-    var progress = mode==="race" ? (qIndex+1)+" / "+questions.length : inputType==="type" ? points+" pts" : points+" correct";
+    var progress = mode==="race" ? (qIndex+1)+" / "+questions.length : isTyped ? points+" pts" : points+" correct";
     var inputBorderColor = "#333";
     if(answered) inputBorderColor = scoreTier(answered.score).color;
     else if(judging) inputBorderColor = C.purple;
@@ -1606,6 +1662,10 @@ export default function SATVocab(){
             onMouseEnter={function(e){e.target.style.borderColor=C.red;e.target.style.color=C.red}}
             onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>Exit</button>
         </div>
+        {aiUnavailable && usesAI ? <div style={{width:"100%",maxWidth:"680px",boxSizing:"border-box",padding:"10px 14px",marginBottom:"12px",background:C.redBg,border:"1px solid "+C.red,borderRadius:"2px",fontSize:"11px",color:C.textMuted,lineHeight:"1.5"}}>
+          <span style={{color:C.red,letterSpacing:"1.5px",textTransform:"uppercase",marginRight:"8px"}}>AI unavailable</span>
+          Using basic scoring. Add credits at <span style={{color:C.purple}}>console.anthropic.com</span>.
+        </div> : null}
         {playerCount>1 ? <div style={Object.assign({},styles.label,{marginBottom:"12px",color:C.textMuted})}>{playerNames[currentPlayerIdx]}</div> : null}
         <Timer running={timerRunning} onTick={function(t){timeRef.current=t}} resetKey={timerKey}/>
         {mode==="survival" ? <div style={{display:"flex",gap:"6px",justifyContent:"center",marginBottom:"8px"}}>
@@ -1614,7 +1674,7 @@ export default function SATVocab(){
         <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"24px",marginTop:"4px"}}>
           <span style={{fontSize:"12px",color:C.textMuted,letterSpacing:"2px"}}>{progress}</span>
           {streak>1 ? <span style={{fontSize:"11px",color:C.green,letterSpacing:"1px",padding:"3px 10px",background:C.greenBg,borderRadius:"2px"}}>{streak} streak</span> : null}
-          {inputType==="type" ? <span style={{fontSize:"10px",color:C.purple,letterSpacing:"1px",padding:"3px 10px",background:C.purpleBg,borderRadius:"2px"}}>AI Scored</span> : null}
+          {usesAI ? <span style={{fontSize:"10px",color:C.purple,letterSpacing:"1px",padding:"3px 10px",background:C.purpleBg,borderRadius:"2px"}}>AI Scored</span> : null}
           {learnMode ? <span style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",padding:"3px 10px",background:C.goldBg,borderRadius:"2px",border:"1px solid rgba(212,168,67,0.2)"}}>Learn Mode</span> : null}
         </div>
         {gameOver ? (
@@ -1625,7 +1685,7 @@ export default function SATVocab(){
         ) : currentQ ? (
           <div style={Object.assign({},styles.card,{textAlign:"center"})}>
             {/* ── PROMPT AREA: word (choice/type) or definition (reverse) ── */}
-            {inputType==="reverse" ? (
+            {isReverse ? (
               <div style={{marginBottom:"24px"}}>
                 <div style={{fontSize:"10px",letterSpacing:"3px",textTransform:"uppercase",color:C.textDim,marginBottom:"10px"}}>{posLabel(currentQ.word.pos)}</div>
                 <div style={{fontSize:"18px",fontWeight:300,color:C.white,lineHeight:"1.5",marginBottom:"12px"}}>{currentQ.word.d}</div>
@@ -1650,7 +1710,7 @@ export default function SATVocab(){
             )}
 
             {/* ── ANSWER AREA ── */}
-            {inputType==="choice" ? (
+            {!isTyped && !isReverse ? (
               <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
                 {currentQ.options.map(function(opt,idx){
                   var bg="#18181c", border=C.inputBorder, color=C.text, opacity=1;
@@ -1666,7 +1726,7 @@ export default function SATVocab(){
                   </button>;
                 })}
               </div>
-            ) : inputType==="reverse" ? (
+            ) : !isTyped && isReverse ? (
               <div style={{display:"flex",gap:"10px",flexWrap:"wrap",justifyContent:"center"}}>
                 {currentQ.options.map(function(opt){
                   var bg="#18181c", border=C.inputBorder, color=C.text, opacity=1;
@@ -1688,7 +1748,7 @@ export default function SATVocab(){
               <div>
                 <input ref={inputRef} style={Object.assign({},styles.input,{fontSize:"16px",textAlign:"left",borderBottomColor:inputBorderColor})}
                   value={typedAnswer} onChange={function(e){setTypedAnswer(e.target.value)}} onKeyDown={handleTypeKeyDown}
-                  placeholder="Type your definition..." autoFocus disabled={!!answered||judging}/>
+                  placeholder={direction==="d2w" ? "Type the word..." : "Type your definition..."} autoFocus disabled={!!answered||judging}/>
                 {!answered && !judging ? <button onClick={handleTypedSubmit} disabled={!typedAnswer.trim()}
                   style={Object.assign({},styles.btn,{marginTop:"12px",width:"100%",opacity:typedAnswer.trim()?1:0.4,fontSize:"11px"})}
                   onMouseEnter={function(e){if(typedAnswer.trim())e.target.style.background="#909096"}}
@@ -1729,7 +1789,6 @@ export default function SATVocab(){
     });
     var winner = sorted[0];
     var perfect = mode==="race" && winner && winner.mistakes===0 && !winner.exited && winner.points>=raceCount;
-    var isTyped = inputType==="type";
 
     return(
       <div style={styles.app}>{fontLink}
@@ -1740,7 +1799,7 @@ export default function SATVocab(){
         </div> : null}
         <div style={styles.title}>Results</div>
         <div style={Object.assign({},styles.subtitle,{marginBottom:"24px"})}>
-          {(mode==="race"?"Race \u2014 "+raceCount+" words":"Survival \u2014 3 strikes")+" \u00B7 "+(tier==="all"?"All levels":tier==="med"?"Medium":tier.charAt(0).toUpperCase()+tier.slice(1))+" \u00B7 "+(inputType==="type"?"Typed (AI Scored)":inputType==="reverse"?"Def \u2192 Word":numChoices+" choices")}
+          {(mode==="race"?"Race \u2014 "+raceCount+" words":"Survival \u2014 3 strikes")+" \u00B7 "+(tier==="all"?"All levels":tier==="med"?"Medium":tier.charAt(0).toUpperCase()+tier.slice(1))+" \u00B7 "+((direction==="w2d"?"Word \u2192 Def":"Def \u2192 Word")+" \u00B7 "+(isTyped?(usesAI?"Typed (AI)":"Typed"):numChoices+" choices"))}
         </div>
         {sorted.map(function(r,i){
           var fullCount = r.wordLog.filter(function(w){return w.tier==="full"}).length;
