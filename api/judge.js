@@ -34,10 +34,12 @@ Be strict about wrong meanings, even when the student uses impressive vocabulary
 
 The "note" should be under 8 words explaining the score, e.g. "Close synonym", "Correct meaning", "Misses key nuance", "Partially correct", "Wrong meaning".`;
 
+// Note: structured outputs does not support numerical constraints (minimum/maximum);
+// the score is clamped to 0-100 in the handler below.
 const OUTPUT_SCHEMA = {
   type: "object",
   properties: {
-    score: { type: "integer", minimum: 0, maximum: 100 },
+    score: { type: "integer" },
     note: { type: "string" }
   },
   required: ["score", "note"],
@@ -65,7 +67,7 @@ export default async function handler(req, res){
 
   try {
     const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-haiku-4-5",
       max_tokens: 128,
       system: [
         {

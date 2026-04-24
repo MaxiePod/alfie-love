@@ -8,7 +8,7 @@
   - MINOR (x.+1.0): Only when significant new features are added (or user requests)
   - MAJOR (+1.0.0): Only for major overhauls (requires prior discussion)
 - Prefix all commit messages with the version number, e.g. `v1.0.1: Fix scoring bug`
-- Current version: v1.10.0
+- Current version: v1.10.1
 
 ## Stack
 - React + Vite
