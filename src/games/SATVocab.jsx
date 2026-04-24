@@ -1395,10 +1395,13 @@ export default function SATVocab(){
       setTypedSentence("");
     }
   };
-  var advanceAfterAnswer = function(isMiss, questionsLen){
-    // In the LEARN WRONGS pile, pause after a miss so the user can study the
-    // correct definition. They dismiss via the Continue button on the feedback card.
-    if(isMiss && tier==="cards" && cardsView==="wrongs"){
+  var advanceAfterAnswer = function(tierName, questionsLen){
+    // In the LEARN WRONGS pile, pause after any non-full answer (miss OR partial)
+    // so the user can study the correct definition. Same threshold that keeps the
+    // word in Wrongs. They dismiss via the Continue button on the feedback card.
+    var isMiss = tierName === "miss";
+    var isNotFull = tierName !== "full";
+    if(isNotFull && tier==="cards" && cardsView==="wrongs"){
       setTimerRunning(false);
       return;
     }
@@ -1416,7 +1419,7 @@ export default function SATVocab(){
     var score = selectedWord===q.word.w ? 100 : 0;
     var t = processResult(score, q, selectedWord);
     setAnswered({score:score, note:""});
-    advanceAfterAnswer(t.tier==="miss", questions.length);
+    advanceAfterAnswer(t.tier, questions.length);
   };
 
   var handleTypedSubmit = async function(){
@@ -1454,7 +1457,7 @@ export default function SATVocab(){
     }
     var t = processResult(result.score, q, loggedAnswer);
     setAnswered({ score: result.score, note: result.note, defResult: result.defResult, sentResult: result.sentResult });
-    advanceAfterAnswer(t.tier==="miss", questions.length);
+    advanceAfterAnswer(t.tier, questions.length);
   };
 
   var handleTypeKeyDown = function(e){ if(e.key==="Enter") handleTypedSubmit(); };
@@ -1793,7 +1796,7 @@ export default function SATVocab(){
     var inputBorderColor = "#333";
     if(answered) inputBorderColor = scoreTier(answered.score).color;
     else if(judging) inputBorderColor = C.purple;
-    var pausedForReview = answered && tier==="cards" && cardsView==="wrongs" && scoreTier(answered.score).tier==="miss";
+    var pausedForReview = answered && tier==="cards" && cardsView==="wrongs" && scoreTier(answered.score).tier!=="full";
 
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
