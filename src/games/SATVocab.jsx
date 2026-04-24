@@ -894,7 +894,25 @@ function offlineJudge(wordEntry, userAnswer) {
 }
 
 async function aiJudge(word, correctDef, userAnswer, wordEntry) {
-  return offlineJudge(wordEntry, userAnswer);
+  var offline = offlineJudge(wordEntry, userAnswer);
+  // Fast path: offline judge already finds a strong match — no need to spend an API call
+  if (offline.score >= 80) return offline;
+
+  try {
+    var res = await fetch("/api/judge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word: word, definition: correctDef, answer: userAnswer })
+    });
+    if (!res.ok) return offline;
+    var data = await res.json();
+    if (typeof data.score !== "number") return offline;
+    // Keep whichever is higher so the AI can never downgrade a valid exact synonym hit
+    if (data.score > offline.score) return { score: Math.round(data.score), note: data.note || "AI judged" };
+    return offline;
+  } catch (e) {
+    return offline;
+  }
 }
 
 var C = {

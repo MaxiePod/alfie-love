@@ -7,7 +7,7 @@ import LexiconPage from './pages/LexiconPage';
 import VexillumPage from './pages/VexillumPage';
 import CapitoliumPage from './pages/CapitoliumPage';
 
-export const APP_VERSION = 'v1.9.1';
+export const APP_VERSION = 'v1.10.0';
 
 function App() {
   return (
