@@ -28,23 +28,18 @@ Be generous to paraphrases and valid approximations. A student does not need to 
 - "Not giving up" for TENACIOUS -> 85
 - "Fake" for SPECIOUS -> 72 (captures the core, misses the "plausible-seeming" nuance)
 - "Honest" for CANDID -> 90
+- "Showing toughness" for FEROCITY -> 55 (related concept but misses the aggression/savagery)
 - "A type of bird" for GARRULOUS -> 0
 
 Be strict about wrong meanings, even when the student uses impressive vocabulary.
 
-The "note" should be under 8 words explaining the score, e.g. "Close synonym", "Correct meaning", "Misses key nuance", "Partially correct", "Wrong meaning".`;
+Respond with ONLY a JSON object, no other text, in this exact shape:
+{"score": <integer 0-100>, "note": "<under 8 words>"}
 
-// Note: structured outputs does not support numerical constraints (minimum/maximum);
-// the score is clamped to 0-100 in the handler below.
-const OUTPUT_SCHEMA = {
-  type: "object",
-  properties: {
-    score: { type: "integer" },
-    note: { type: "string" }
-  },
-  required: ["score", "note"],
-  additionalProperties: false
-};
+Example valid responses:
+{"score": 92, "note": "Close synonym"}
+{"score": 55, "note": "Related but misses nuance"}
+{"score": 0, "note": "Wrong meaning"}`;
 
 export default async function handler(req, res){
   if(req.method !== "POST"){
@@ -69,25 +64,13 @@ export default async function handler(req, res){
     const response = await client.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 128,
-      system: [
-        {
-          type: "text",
-          text: SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" }
-        }
-      ],
+      system: SYSTEM_PROMPT,
       messages: [
         {
           role: "user",
           content: `Word: ${word}\nCorrect definition: ${definition}\nStudent's answer: ${answer}`
         }
-      ],
-      output_config: {
-        format: {
-          type: "json_schema",
-          schema: OUTPUT_SCHEMA
-        }
-      }
+      ]
     });
 
     const textBlock = response.content.find(b => b.type === "text");
@@ -96,24 +79,30 @@ export default async function handler(req, res){
       return;
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(textBlock.text);
-    } catch(e){
-      res.status(502).json({ error: "Invalid JSON from model" });
+    // Extract JSON object from the text — tolerate any whitespace/prefix
+    const raw = textBlock.text.trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if(!match){
+      res.status(502).json({ error: "No JSON object in model response", raw });
       return;
     }
 
-    const score = Math.max(0, Math.min(100, Math.round(parsed.score)));
-    const note = (parsed.note || "").trim().slice(0, 80);
+    let parsed;
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch(e){
+      res.status(502).json({ error: "Invalid JSON from model", raw: match[0] });
+      return;
+    }
+
+    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const note = String(parsed.note || "").trim().slice(0, 80);
     res.status(200).json({ score, note });
   } catch(err){
-    if(err instanceof Anthropic.APIError){
-      console.error("Anthropic API error", err.status, err.message);
-      res.status(502).json({ error: "Upstream error: " + err.message });
-    } else {
-      console.error("judge handler error", err);
-      res.status(500).json({ error: "Internal error" });
-    }
+    // Surface the real error so we can diagnose from the response body
+    const message = err && err.message ? err.message : String(err);
+    const status = (err && err.status) || 500;
+    console.error("judge handler error", status, message);
+    res.status(500).json({ error: message, status });
   }
 }
