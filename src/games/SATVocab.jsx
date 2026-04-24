@@ -1609,7 +1609,10 @@ export default function SATVocab(){
           <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
             <div>
               <div style={styles.label}>Game Mode</div>
-              <SegmentedControl options={[{value:"race",label:"⚡︎ Race"},{value:"survival",label:"♥︎ Survival"}]} value={mode} onChange={setMode}/>
+              <SegmentedControl options={[
+                {value:"race",label:<><span style={{color:C.gold,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>⚡︎</span>Race</>},
+                {value:"survival",label:<><span style={{color:C.red,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>♥︎</span>Survival</>}
+              ]} value={mode} onChange={setMode}/>
               <div style={{fontSize:"12px",color:C.textMuted,marginTop:"8px"}}>{mode==="race"?"Answer a set number of words as fast as possible.":"How many can you get right? Three strikes and you're out."}</div>
               {mode==="race" ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
                 <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
@@ -1623,11 +1626,11 @@ export default function SATVocab(){
               {tier==="cards" ? (function(){
                 var activeCount = allWords.filter(function(w){ return w.t==="cards" && masteredOrder.indexOf(w.w)===-1; }).length;
                 var viewOptions = [{value:"active",label:"Active ("+activeCount+")"}];
-                if(wrongs.length > 0) viewOptions.push({value:"wrongs",label:"✗ Learn Wrongs ("+wrongs.length+")"});
+                if(wrongs.length > 0) viewOptions.push({value:"wrongs",label:<><span style={{color:C.red,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>✗</span>{"Learn Wrongs ("+wrongs.length+")"}</>});
                 masteredBatches.forEach(function(b,i){
                   var lo = i*BATCH_SIZE+1;
                   var hi = i*BATCH_SIZE+b.length;
-                  viewOptions.push({value:"mastered-"+i,label:"✓ Mastered "+lo+"-"+hi});
+                  viewOptions.push({value:"mastered-"+i,label:<><span style={{color:C.green,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>✓</span>{"Mastered "+lo+"-"+hi}</>});
                 });
                 return <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
                   <div style={styles.label}>Cards View</div>
@@ -1695,7 +1698,7 @@ export default function SATVocab(){
                     return <div key={(entry.custom?"cc-":"hw-")+i} style={{display:"flex",alignItems:"center",padding:"10px 4px",borderBottom:"1px solid "+C.cardBorder,gap:"12px"}}>
                       <span style={{color:entry.custom?C.purple:C.white,fontSize:"15px",fontWeight:400,minWidth:"140px",flexShrink:0,display:"flex",alignItems:"center",gap:"6px"}}>
                         {c.w}
-                        {isWrong ? <span title="In Learn Wrongs" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"16px",height:"16px",fontSize:"11px",lineHeight:1,color:C.red,background:C.redBg,border:"1px solid rgba(219,92,92,0.35)",borderRadius:"50%",fontWeight:500}}>✗</span> : null}
+                        {isWrong ? <span title="In Learn Wrongs" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"18px",height:"18px",fontSize:"13px",lineHeight:1,color:"#fff",background:C.red,border:"1px solid "+C.red,borderRadius:"50%",fontWeight:700,boxShadow:"0 0 0 2px rgba(212,85,85,0.18)"}}>✗</span> : null}
                       </span>
                       <span title={mastered?"Mastered":streak+" in a row"} style={{fontFamily:"'Roboto Mono', monospace",fontSize:"12px",color:streakColor,minWidth:"48px",textAlign:"center",flexShrink:0}}>{mastered?"✓ "+streak:streak+"/"+MASTERY_THRESHOLD}</span>
                       <span style={{color:C.textMuted,fontSize:"13px",flex:1,textAlign:"right",lineHeight:"1.4"}}>{c.d}</span>
