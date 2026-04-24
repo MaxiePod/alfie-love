@@ -56,7 +56,7 @@ Scoring rules — apply literally:
 1. IGNORE capitalization. IGNORE missing punctuation. IGNORE sentence case. Never deduct for these.
 2. Minor typos (1-2 characters wrong, a missing letter, a swapped letter) deduct at most 5 points. "ferosity" instead of "ferocity" is a 5-point deduction, not a 50-point one.
 3. Severe spelling (word is unrecognizable) deduct up to 15 points — not more.
-4. A basic, correct sentence is ALWAYS 80+. Do not penalize for being "plain" or "not creative." Simplicity is not a flaw.
+4. A basic, correct sentence is ALWAYS 75+. Do not penalize for being "plain" or "not creative." Simplicity is not a flaw.
 5. Restating the definition alongside the word (e.g. "His ferocity, his savage aggression, scared me") still demonstrates understanding — score 70-80, not 50.
 6. The ONLY things to penalize heavily are: wrong meaning, wrong connotation, wrong part of speech used ungrammatically, or the word not appearing at all.
 

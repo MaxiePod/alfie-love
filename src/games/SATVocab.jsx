@@ -668,7 +668,7 @@ function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.fl
 const posLabel = function(p) { return p==="n"?"noun":p==="v"?"verb":p==="adv"?"adverb":"adjective"; };
 
 function scoreTier(s){
-  if(s>=80) return {tier:"full",pts:1,color:"#5cb870",bg:"rgba(92,184,112,0.1)",label:"Nailed it",icon:"\u2713"};
+  if(s>=75) return {tier:"full",pts:1,color:"#5cb870",bg:"rgba(92,184,112,0.1)",label:"Nailed it",icon:"\u2713"};
   if(s>=50) return {tier:"partial",pts:0.5,color:"#d4a843",bg:"rgba(212,168,67,0.06)",label:"Close",icon:"\u2248"};
   return {tier:"miss",pts:0,color:"#d45555",bg:"rgba(212,85,85,0.08)",label:"Off target",icon:"\u2717"};
 }
@@ -898,7 +898,7 @@ async function aiJudge(word, correctDef, userAnswer, wordEntry, onAiUnavailable,
   var offline;
   if (mode === "definition") {
     offline = offlineJudge(wordEntry, userAnswer);
-    if (offline.score >= 80) return offline;
+    if (offline.score >= 75) return offline;
   } else {
     // Sentence mode has no meaningful offline judge — at best we can check whether
     // the word (or its stem) actually appears in the sentence.
@@ -994,7 +994,7 @@ function ScoreBar(props){
   var score = props.score;
   var height = props.height || 8;
   var t = scoreTier(score);
-  var grad = score >= 80 ? "linear-gradient(90deg, "+C.green+", #7dd98f)" : score >= 50 ? "linear-gradient(90deg, "+C.gold+", #f0d878)" : "linear-gradient(90deg, "+C.red+", #ff8a8a)";
+  var grad = score >= 75 ? "linear-gradient(90deg, "+C.green+", #7dd98f)" : score >= 50 ? "linear-gradient(90deg, "+C.gold+", #f0d878)" : "linear-gradient(90deg, "+C.red+", #ff8a8a)";
   return(
     <div style={{display:"flex",alignItems:"center",gap:"10px",width:"100%"}}>
       <div style={{flex:1,height:height+"px",background:"#1e1e22",borderRadius:height/2+"px",overflow:"hidden"}}>
@@ -1631,7 +1631,7 @@ export default function SATVocab(){
                 <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Both"}]} value={typeTarget} onChange={setTypeTarget}/>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition. AI scores meaning match." : typeTarget==="sentence" ? "Use the word in a sentence. AI scores usage." : "Type both. Lower of the two scores counts — Final Frontier."}</div>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"4px"}}>
-                  <span style={{color:C.green}}>80-100%</span>{" full · "}
+                  <span style={{color:C.green}}>75-100%</span>{" full · "}
                   <span style={{color:C.gold}}>50-79%</span>{" partial · "}
                   <span style={{color:C.red}}>0-49%</span>{" miss"}
                 </div>
@@ -1680,7 +1680,7 @@ export default function SATVocab(){
                 return <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
                   <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center"})}>
                     <span>Cards View</span>
-                    <InfoTip text={"Which slice of the Family deck to drill. Active: still learning. Learn Wrongs: words you missed recently — stays until you get one fully right (80+). Mastered: words you've nailed "+MASTERY_THRESHOLD+" in a row, grouped in batches of "+BATCH_SIZE+"."}/>
+                    <InfoTip text={"Which slice of the Family deck to drill. Active: still learning. Learn Wrongs: words you missed recently — stays until you get one fully right (75+). Mastered: words you've nailed "+MASTERY_THRESHOLD+" in a row, grouped in batches of "+BATCH_SIZE+"."}/>
                   </div>
                   <SegmentedControl options={viewOptions} value={cardsView} onChange={setCardsView}/>
                   <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>
@@ -1785,7 +1785,7 @@ export default function SATVocab(){
           <div style={{width:"32px",height:"18px",borderRadius:"9px",background:learnMode?"rgba(155,142,196,0.3)":"#1e1e22",border:"1px solid "+(learnMode?"rgba(155,142,196,0.4)":C.inputBorder),position:"relative",transition:"all 0.2s"}}>
             <div style={{width:"14px",height:"14px",borderRadius:"50%",background:learnMode?C.purple:C.textDim,position:"absolute",top:"1px",left:learnMode?"15px":"1px",transition:"all 0.2s"}}/>
           </div>
-          <span style={{fontSize:"11px",letterSpacing:"2px",textTransform:"uppercase",color:learnMode?C.purple:C.textDim}}>Learn Mode</span>
+          <span style={{fontSize:"11px",letterSpacing:"2px",textTransform:"uppercase",color:learnMode?C.purple:C.textDim}}>Override Mode</span>
           {learnMode ? <span style={{fontSize:"10px",color:C.textDim}}>— teach the scorer your definitions</span> : null}
         </div>
         <button style={styles.btn} onClick={startGame} onMouseEnter={function(e){e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Start Game</button>
@@ -1826,7 +1826,7 @@ export default function SATVocab(){
           <span style={{fontSize:"12px",color:C.textMuted,letterSpacing:"2px"}}>{progress}</span>
           {streak>1 ? <span style={{fontSize:"11px",color:C.green,letterSpacing:"1px",padding:"3px 10px",background:C.greenBg,borderRadius:"2px"}}>{streak} streak</span> : null}
           {usesAI ? <span style={{fontSize:"10px",color:C.purple,letterSpacing:"1px",padding:"3px 10px",background:C.purpleBg,borderRadius:"2px"}}>AI Scored</span> : null}
-          {learnMode ? <span style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",padding:"3px 10px",background:C.goldBg,borderRadius:"2px",border:"1px solid rgba(212,168,67,0.2)"}}>Learn Mode</span> : null}
+          {learnMode ? <span style={{fontSize:"10px",color:C.gold,letterSpacing:"1px",padding:"3px 10px",background:C.goldBg,borderRadius:"2px",border:"1px solid rgba(212,168,67,0.2)"}}>Override Mode</span> : null}
         </div>
         {gameOver ? (
           <div style={Object.assign({},styles.card,{textAlign:"center",padding:"48px"})}>
@@ -1996,7 +1996,7 @@ export default function SATVocab(){
                 <div>
                   <div style={{display:"flex",justifyContent:"space-around",textAlign:"center",marginBottom:"16px"}}>
                     <div><div style={styles.label}>Points</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.points}</div></div>
-                    <div><div style={styles.label}>Avg Score</div><div style={{fontSize:"28px",fontWeight:100,color:r.avgScore>=80?C.green:r.avgScore>=50?C.gold:C.red}}>{r.avgScore}%</div></div>
+                    <div><div style={styles.label}>Avg Score</div><div style={{fontSize:"28px",fontWeight:100,color:r.avgScore>=75?C.green:r.avgScore>=50?C.gold:C.red}}>{r.avgScore}%</div></div>
                     <div><div style={styles.label}>Best Streak</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.bestStreak}</div></div>
                   </div>
                   <div style={{display:"flex",gap:"8px",justifyContent:"center",marginBottom:"4px"}}>
