@@ -1039,6 +1039,34 @@ function SegmentedControl(props){
   );
 }
 
+// Small circular "i" that toggles a short explanation on click.
+// Keeps its own open state — fine to sprinkle around without coordination.
+function InfoTip(props){
+  var [open, setOpen] = useState(false);
+  return (
+    <span style={{position:"relative",display:"inline-flex",alignItems:"center",marginLeft:"8px",verticalAlign:"middle"}}>
+      <button type="button" onClick={function(e){ e.stopPropagation(); setOpen(!open); }} aria-label="More info" style={{
+        width:"16px",height:"16px",padding:0,border:"1px solid "+(open?C.purple:C.inputBorder),
+        background:open?"rgba(155,142,196,0.15)":"transparent",color:open?C.purple:C.textDim,
+        borderRadius:"50%",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",
+        fontFamily:"'Roboto Mono', monospace",fontWeight:600,fontSize:"10px",lineHeight:1,letterSpacing:0,
+        textTransform:"none",transition:"all 0.15s",
+      }}
+        onMouseEnter={function(e){ if(!open){ e.currentTarget.style.borderColor=C.purple; e.currentTarget.style.color=C.purple; } }}
+        onMouseLeave={function(e){ if(!open){ e.currentTarget.style.borderColor=C.inputBorder; e.currentTarget.style.color=C.textDim; } }}>i</button>
+      {open ? <div onClick={function(){ setOpen(false); }} style={{
+        position:"absolute",top:"22px",left:"-4px",zIndex:50,
+        width:"300px",maxWidth:"calc(100vw - 40px)",
+        padding:"10px 14px",background:"#18181c",
+        border:"1px solid rgba(155,142,196,0.4)",borderRadius:"3px",
+        boxShadow:"0 8px 24px rgba(0,0,0,0.5)",
+        fontSize:"12px",fontWeight:400,lineHeight:"1.55",color:C.textMuted,
+        letterSpacing:"normal",textTransform:"none",textAlign:"left",cursor:"pointer",
+      }}>{props.text}</div> : null}
+    </span>
+  );
+}
+
 function FeedbackCard(props) {
   var answered = props.answered;
   var word = props.word;
@@ -1574,7 +1602,10 @@ export default function SATVocab(){
           <div style={{fontSize:"12px",color:C.textMuted,lineHeight:"1.5"}}>Anthropic credit balance is empty. Typed answers will use basic scoring until you add credits at <span style={{color:C.purple}}>console.anthropic.com</span>.</div>
         </div> : null}
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
-          <div style={styles.cardTitle}>Question Style</div>
+          <div style={Object.assign({},styles.cardTitle,{display:"flex",alignItems:"center"})}>
+            <span>Question Style</span>
+            <InfoTip text="How each prompt is shown and how you answer it. The prompt direction controls what you see (word vs. definition); the input controls whether you tap a choice or type it out for AI judging."/>
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
             <div>
               <div style={styles.label}>Direction</div>
@@ -1590,7 +1621,10 @@ export default function SATVocab(){
                 <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
               </div> : null}
               {usesAI ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
-                <div style={styles.label}>Type What?</div>
+                <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center"})}>
+                  <span>Type What?</span>
+                  <InfoTip text="What you type for the AI to judge. Definition: write the meaning. Sentence: use the word naturally in a sentence. Both (Final Frontier): the lower of the two scores counts — no hiding behind one strong answer."/>
+                </div>
                 <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Both"}]} value={typeTarget} onChange={setTypeTarget}/>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition. AI scores meaning match." : typeTarget==="sentence" ? "Use the word in a sentence. AI scores usage." : "Type both. Lower of the two scores counts — Final Frontier."}</div>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"4px"}}>
@@ -1604,10 +1638,16 @@ export default function SATVocab(){
           </div>
         </div>
         <div style={Object.assign({},styles.card,{marginBottom:"16px"})}>
-          <div style={styles.cardTitle}>Round</div>
+          <div style={Object.assign({},styles.cardTitle,{display:"flex",alignItems:"center"})}>
+            <span>Round</span>
+            <InfoTip text="Shape of one game: which format (Race against the clock vs. Survival until 3 misses), which words go into the pool (difficulty + cards view), and how many you'll face."/>
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
             <div>
-              <div style={styles.label}>Game Mode</div>
+              <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center"})}>
+                <span>Game Mode</span>
+                <InfoTip text="Race: answer a fixed number of words as fast as you can — timer runs until you're done. Survival: keep going until you miss three (score &lt; 50%). Partial credit doesn't cost a life."/>
+              </div>
               <SegmentedControl options={[
                 {value:"race",label:<><span style={{color:C.gold,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>⚡︎</span>Race</>},
                 {value:"survival",label:<><span style={{color:C.red,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>♥︎</span>Survival</>}
@@ -1619,7 +1659,10 @@ export default function SATVocab(){
               </div> : null}
             </div>
             <div>
-              <div style={styles.label}>Difficulty</div>
+              <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center"})}>
+                <span>Difficulty</span>
+                <InfoTip text="Easy, Medium, and Hard are curated SAT word lists. Family is your personal deck — you add cards to it and it tracks per-word streaks toward Mastery. All mixes every level together."/>
+              </div>
               <SegmentedControl options={TIERS} value={tier} onChange={setTier}/>
               <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{totalAvailable} words available</div>
               {tier==="cards" ? (function(){
@@ -1632,7 +1675,10 @@ export default function SATVocab(){
                   viewOptions.push({value:"mastered-"+i,label:<><span style={{color:C.green,fontWeight:700,fontSize:"13px",marginRight:"6px"}}>✓</span>{"Mastered "+lo+"-"+hi}</>});
                 });
                 return <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
-                  <div style={styles.label}>Cards View</div>
+                  <div style={Object.assign({},styles.label,{display:"flex",alignItems:"center"})}>
+                    <span>Cards View</span>
+                    <InfoTip text={"Which slice of the Family deck to drill. Active: still learning. Learn Wrongs: words you missed recently — stays until you get one fully right (80+). Mastered: words you've nailed "+MASTERY_THRESHOLD+" in a row, grouped in batches of "+BATCH_SIZE+"."}/>
+                  </div>
                   <SegmentedControl options={viewOptions} value={cardsView} onChange={setCardsView}/>
                   <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>
                     {cardsView==="active"
