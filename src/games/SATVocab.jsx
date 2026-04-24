@@ -668,8 +668,8 @@ function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.fl
 const posLabel = function(p) { return p==="n"?"noun":p==="v"?"verb":p==="adv"?"adverb":"adjective"; };
 
 function scoreTier(s){
-  if(s>=70) return {tier:"full",pts:1,color:"#5cb870",bg:"rgba(92,184,112,0.1)",label:"Nailed it",icon:"\u2713"};
-  if(s>=40) return {tier:"partial",pts:0.5,color:"#d4a843",bg:"rgba(212,168,67,0.06)",label:"Close",icon:"\u2248"};
+  if(s>=80) return {tier:"full",pts:1,color:"#5cb870",bg:"rgba(92,184,112,0.1)",label:"Nailed it",icon:"\u2713"};
+  if(s>=50) return {tier:"partial",pts:0.5,color:"#d4a843",bg:"rgba(212,168,67,0.06)",label:"Close",icon:"\u2248"};
   return {tier:"miss",pts:0,color:"#d45555",bg:"rgba(212,85,85,0.08)",label:"Off target",icon:"\u2717"};
 }
 
@@ -994,7 +994,7 @@ function ScoreBar(props){
   var score = props.score;
   var height = props.height || 8;
   var t = scoreTier(score);
-  var grad = score >= 70 ? "linear-gradient(90deg, "+C.green+", #7dd98f)" : score >= 40 ? "linear-gradient(90deg, "+C.gold+", #f0d878)" : "linear-gradient(90deg, "+C.red+", #ff8a8a)";
+  var grad = score >= 80 ? "linear-gradient(90deg, "+C.green+", #7dd98f)" : score >= 50 ? "linear-gradient(90deg, "+C.gold+", #f0d878)" : "linear-gradient(90deg, "+C.red+", #ff8a8a)";
   return(
     <div style={{display:"flex",alignItems:"center",gap:"10px",width:"100%"}}>
       <div style={{flex:1,height:height+"px",background:"#1e1e22",borderRadius:height/2+"px",overflow:"hidden"}}>
@@ -1341,8 +1341,7 @@ export default function SATVocab(){
 
     // Per-word streak tracking for Cards tier
     if(userName && q.word.t==="cards"){
-      var isCorrect = (t.tier==="full" || t.tier==="partial");
-      var next = applyAnswer(streaksRef.current, masteredOrderRef.current, wrongsRef.current, q.word.w, isCorrect);
+      var next = applyAnswer(streaksRef.current, masteredOrderRef.current, wrongsRef.current, q.word.w, t.tier);
       streaksRef.current = next.streaks;
       masteredOrderRef.current = next.masteredOrder;
       wrongsRef.current = next.wrongs;
@@ -1558,7 +1557,13 @@ export default function SATVocab(){
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={styles.title}>Lexicon</div>
-        <div style={styles.subtitle}>{allWords.length} SAT vocabulary words</div>
+        <div style={styles.subtitle}>{(function(){
+          var e=allWords.filter(function(w){return w.t==="easy"}).length;
+          var m=allWords.filter(function(w){return w.t==="med"}).length;
+          var h=allWords.filter(function(w){return w.t==="hard"}).length;
+          var c=allWords.filter(function(w){return w.t==="cards"}).length;
+          return allWords.length+" words · "+e+" easy · "+m+" medium · "+h+" hard · "+c+" family";
+        })()}</div>
         <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"16px",marginBottom:"20px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"14px",padding:"12px 22px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.5)",borderRadius:"3px"}}>
             <div style={{width:"10px",height:"10px",borderRadius:"50%",background:C.purple}}/>
@@ -1595,9 +1600,9 @@ export default function SATVocab(){
                 <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Both"}]} value={typeTarget} onChange={setTypeTarget}/>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition. AI scores meaning match." : typeTarget==="sentence" ? "Use the word in a sentence. AI scores usage." : "Type both. Lower of the two scores counts — Final Frontier."}</div>
                 <div style={{fontSize:"11px",color:C.textDim,marginTop:"4px"}}>
-                  <span style={{color:C.green}}>70-100%</span>{" full · "}
-                  <span style={{color:C.gold}}>40-69%</span>{" partial · "}
-                  <span style={{color:C.red}}>0-39%</span>{" miss"}
+                  <span style={{color:C.green}}>80-100%</span>{" full · "}
+                  <span style={{color:C.gold}}>50-79%</span>{" partial · "}
+                  <span style={{color:C.red}}>0-49%</span>{" miss"}
                 </div>
               </div> : null}
               {isTyped && direction==="d2w" ? <div style={{marginTop:"8px",fontSize:"11px",color:C.textDim}}>Type the word. Judged locally — typos and word-forms get partial credit.</div> : null}
@@ -1945,7 +1950,7 @@ export default function SATVocab(){
                 <div>
                   <div style={{display:"flex",justifyContent:"space-around",textAlign:"center",marginBottom:"16px"}}>
                     <div><div style={styles.label}>Points</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.points}</div></div>
-                    <div><div style={styles.label}>Avg Score</div><div style={{fontSize:"28px",fontWeight:100,color:r.avgScore>=70?C.green:r.avgScore>=40?C.gold:C.red}}>{r.avgScore}%</div></div>
+                    <div><div style={styles.label}>Avg Score</div><div style={{fontSize:"28px",fontWeight:100,color:r.avgScore>=80?C.green:r.avgScore>=50?C.gold:C.red}}>{r.avgScore}%</div></div>
                     <div><div style={styles.label}>Best Streak</div><div style={{fontSize:"28px",fontWeight:100,color:C.white}}>{r.bestStreak}</div></div>
                   </div>
                   <div style={{display:"flex",gap:"8px",justifyContent:"center",marginBottom:"4px"}}>

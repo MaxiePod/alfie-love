@@ -70,25 +70,32 @@ export async function saveProgress(userName, streaks, masteredOrder, wrongs) {
 }
 
 // Apply an answer result to in-memory progress. Returns new { streaks, masteredOrder, wrongs }.
-// On miss: zero the streak, unmaster, and add the word to `wrongs` (the Learn Wrongs pile).
-// On correct (full or partial): bump the streak, possibly master, and remove from `wrongs`.
-export function applyAnswer(streaks, masteredOrder, wrongs, word, isCorrect) {
+// `tier` is "full" | "partial" | "miss".
+//   full:    streak++, may master, removed from wrongs
+//   partial: streak++, may master, ADDED to wrongs (still needs drill work)
+//   miss:    streak=0, unmastered, added to wrongs
+export function applyAnswer(streaks, masteredOrder, wrongs, word, tier) {
   var nextStreaks = Object.assign({}, streaks);
   var nextMastered = masteredOrder.slice();
   var nextWrongs = (wrongs || []).slice();
+  var isCorrect = tier === "full" || tier === "partial";
+  var isFull = tier === "full";
   if(isCorrect){
     var s = (nextStreaks[word] || 0) + 1;
     nextStreaks[word] = s;
     if(s >= MASTERY_THRESHOLD && nextMastered.indexOf(word) === -1){
       nextMastered.push(word);
     }
-    var wi = nextWrongs.indexOf(word);
-    if(wi !== -1) nextWrongs.splice(wi, 1);
   } else {
     nextStreaks[word] = 0;
     var idx = nextMastered.indexOf(word);
     if(idx !== -1) nextMastered.splice(idx, 1);
-    if(nextWrongs.indexOf(word) === -1) nextWrongs.push(word);
+  }
+  if(isFull){
+    var wi = nextWrongs.indexOf(word);
+    if(wi !== -1) nextWrongs.splice(wi, 1);
+  } else if(nextWrongs.indexOf(word) === -1){
+    nextWrongs.push(word);
   }
   return { streaks: nextStreaks, masteredOrder: nextMastered, wrongs: nextWrongs };
 }
