@@ -1131,7 +1131,7 @@ export default function SATVocab(){
   var [mode, setMode] = useState("race");
   var [learnMode, setLearnMode] = useState(false);
   var [direction, setDirection] = useState("w2d"); // "w2d" = word→def, "d2w" = def→word
-  var [inputMode, setInputMode] = useState("choice"); // "choice" = multiple choice, "type" = typed
+  var [inputMode, setInputMode] = useState("type"); // "choice" = multiple choice, "type" = typed
   var [typeTarget, setTypeTarget] = useState("definition"); // "definition" | "sentence" | "both" — only active when usesAI
   var [aiUnavailable, setAiUnavailable] = useState(false);
   // Back-compat shim: keep isTyped/isReverse/usesAI derived so the existing render logic is cleaner.
@@ -1584,7 +1584,7 @@ export default function SATVocab(){
             </div>
             <div>
               <div style={styles.label}>Input</div>
-              <SegmentedControl options={[{value:"choice",label:"Multiple Choice"},{value:"type",label:"Type It"}]} value={inputMode} onChange={setInputMode}/>
+              <SegmentedControl options={[{value:"type",label:"Type It"},{value:"choice",label:"Multiple Choice"}]} value={inputMode} onChange={setInputMode}/>
               {/* Sub-options that belong to Input — indented with a left rule for visual grouping */}
               {!isTyped ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
                 <div style={styles.label}>Number of Choices</div>
@@ -1609,7 +1609,7 @@ export default function SATVocab(){
           <div style={{display:"flex",flexDirection:"column",gap:"22px"}}>
             <div>
               <div style={styles.label}>Game Mode</div>
-              <SegmentedControl options={[{value:"race",label:"Race"},{value:"survival",label:"Survival"}]} value={mode} onChange={setMode}/>
+              <SegmentedControl options={[{value:"race",label:"⚡︎ Race"},{value:"survival",label:"♥︎ Survival"}]} value={mode} onChange={setMode}/>
               <div style={{fontSize:"12px",color:C.textMuted,marginTop:"8px"}}>{mode==="race"?"Answer a set number of words as fast as possible.":"How many can you get right? Three strikes and you're out."}</div>
               {mode==="race" ? <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
                 <div style={styles.label}>Number of Words ({totalAvailable} available)</div>
@@ -1623,11 +1623,11 @@ export default function SATVocab(){
               {tier==="cards" ? (function(){
                 var activeCount = allWords.filter(function(w){ return w.t==="cards" && masteredOrder.indexOf(w.w)===-1; }).length;
                 var viewOptions = [{value:"active",label:"Active ("+activeCount+")"}];
-                if(wrongs.length > 0) viewOptions.push({value:"wrongs",label:"Learn Wrongs ("+wrongs.length+")"});
+                if(wrongs.length > 0) viewOptions.push({value:"wrongs",label:"✗ Learn Wrongs ("+wrongs.length+")"});
                 masteredBatches.forEach(function(b,i){
                   var lo = i*BATCH_SIZE+1;
                   var hi = i*BATCH_SIZE+b.length;
-                  viewOptions.push({value:"mastered-"+i,label:"Mastered "+lo+"-"+hi});
+                  viewOptions.push({value:"mastered-"+i,label:"✓ Mastered "+lo+"-"+hi});
                 });
                 return <div style={{marginTop:"12px",paddingLeft:"14px",borderLeft:"2px solid "+C.cardBorder}}>
                   <div style={styles.label}>Cards View</div>
@@ -1695,7 +1695,7 @@ export default function SATVocab(){
                     return <div key={(entry.custom?"cc-":"hw-")+i} style={{display:"flex",alignItems:"center",padding:"10px 4px",borderBottom:"1px solid "+C.cardBorder,gap:"12px"}}>
                       <span style={{color:entry.custom?C.purple:C.white,fontSize:"15px",fontWeight:400,minWidth:"140px",flexShrink:0,display:"flex",alignItems:"center",gap:"6px"}}>
                         {c.w}
-                        {isWrong ? <span title="In Learn Wrongs" style={{fontSize:"9px",letterSpacing:"1px",color:C.red,background:C.redBg,border:"1px solid rgba(219,92,92,0.3)",padding:"1px 5px",borderRadius:"2px",textTransform:"uppercase",fontWeight:500}}>Wrong</span> : null}
+                        {isWrong ? <span title="In Learn Wrongs" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"16px",height:"16px",fontSize:"11px",lineHeight:1,color:C.red,background:C.redBg,border:"1px solid rgba(219,92,92,0.35)",borderRadius:"50%",fontWeight:500}}>✗</span> : null}
                       </span>
                       <span title={mastered?"Mastered":streak+" in a row"} style={{fontFamily:"'Roboto Mono', monospace",fontSize:"12px",color:streakColor,minWidth:"48px",textAlign:"center",flexShrink:0}}>{mastered?"✓ "+streak:streak+"/"+MASTERY_THRESHOLD}</span>
                       <span style={{color:C.textMuted,fontSize:"13px",flex:1,textAlign:"right",lineHeight:"1.4"}}>{c.d}</span>
