@@ -37,31 +37,38 @@ Be strict about wrong meanings, even when the student uses impressive vocabulary
 Respond with ONLY a JSON object, no other text:
 {"score": <integer 0-100>, "note": "<under 8 words>"}`;
 
-const SENTENCE_PROMPT = `You are evaluating a student's sentence using an SAT vocabulary word. The goal is to confirm they understand the meaning by using the word naturally and correctly in context.
+const SENTENCE_PROMPT = `You are evaluating a student's sentence using an SAT vocabulary word. The only thing that matters is whether they use the word with the correct meaning.
 
 You will be given:
 - The target word
 - Its correct definition
 - The student's sentence
 
-Score 0-100 based on how well the sentence demonstrates the word's meaning:
-- 90-100: Uses the word correctly in a natural, rich context that clearly demonstrates the meaning
-- 70-89: Correct usage; context may be slightly generic or understated
-- 40-69: Partial — word is present but the sentence does not fully demonstrate the meaning (generic context, weak fit)
-- 10-39: Misused — wrong connotation, wrong sense, or sentence doesn't fit
-- 0-9: Word absent, nonsensical, or clearly wrong
+Score 0-100:
+- 90-100: Clearly correct usage in a natural context. The sentence shows real understanding of the meaning.
+- 75-89: Correct usage even if the context is simple or generic. A basic correct sentence lives HERE — this is the default for any sentence that uses the word rightly.
+- 55-74: Usage is mostly right but slightly forced, imprecise, or a bit loose.
+- 30-54: Partial — the sentence doesn't really demonstrate that they understand the word.
+- 10-29: Wrong meaning or wrong connotation.
+- 0-9: Word missing, nonsensical, or flatly wrong.
 
-Red flags (cap score accordingly):
-- Sentence just restates the definition — cap at 50
-- Word is a filler and could be swapped for any generic word — cap at 60
-- Wrong connotation or wrong meaning — cap at 30
-- Wrong part of speech without proper inflection — cap at 40
+Scoring rules — apply literally:
+1. IGNORE capitalization. IGNORE missing punctuation. IGNORE sentence case. Never deduct for these.
+2. Minor typos (1-2 characters wrong, a missing letter, a swapped letter) deduct at most 5 points. "ferosity" instead of "ferocity" is a 5-point deduction, not a 50-point one.
+3. Severe spelling (word is unrecognizable) deduct up to 15 points — not more.
+4. A basic, correct sentence is ALWAYS 80+. Do not penalize for being "plain" or "not creative." Simplicity is not a flaw.
+5. Restating the definition alongside the word (e.g. "His ferocity, his savage aggression, scared me") still demonstrates understanding — score 70-80, not 50.
+6. The ONLY things to penalize heavily are: wrong meaning, wrong connotation, wrong part of speech used ungrammatically, or the word not appearing at all.
 
 Examples for FEROCITY (savage fierceness; aggressive intensity):
-- "The lion attacked its prey with startling ferocity." -> 95
-- "She worked with ferocity on her project." -> 75 (metaphorical but correct)
-- "The ferocity was there in the room." -> 30 (vague)
-- "His ferocity for cookies was endearing." -> 15 (wrong connotation)
+- "the lion attacked its prey with ferocity" -> 90 (no caps/period — doesn't matter)
+- "she showed ferocity in the match" -> 85 (simple but correct)
+- "he fought with ferosity" -> 82 (correct usage, 1-char typo, -5 max)
+- "the athlete's ferocity was unmatched" -> 88
+- "she worked with ferocity on her paper" -> 85 (metaphorical but valid)
+- "the ferocity was there in the room" -> 50 (vague — doesn't demonstrate meaning)
+- "his ferocity for baking cookies was endearing" -> 20 (wrong connotation — ferocity isn't enthusiasm)
+- "ferocity is savage aggression" -> 40 (just defines it, doesn't use it)
 
 Respond with ONLY a JSON object, no other text:
 {"score": <integer 0-100>, "note": "<under 10 words>"}`;
