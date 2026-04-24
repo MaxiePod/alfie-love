@@ -1593,27 +1593,27 @@ export default function SATVocab(){
                   onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>
                   Restore Deleted Words ({deletedWords.length})
                 </button> : null}
-                {showCurrentWords ? <div style={{marginTop:"12px",maxHeight:"400px",overflowY:"auto"}}>
-                  {cardsPool.map(function(c,i){
-                    return <div key={"hw-"+i} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
-                      <span style={{color:C.white,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
-                      <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
-                      <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
-                        var updated = deletedWords.concat([c.w]);
-                        setDeletedWords(updated);
-                        saveDeletedWords(updated);
-                      }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
-                    </div>;
-                  })}
-                  {customCards.map(function(c,i){
-                    return <div key={"cc-"+i} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+C.cardBorder}}>
-                      <span style={{color:C.purple,fontSize:"13px",minWidth:"120px"}}>{c.w}</span>
-                      <span style={{color:C.textDim,fontSize:"11px",flex:1,textAlign:"right"}}>{c.d}</span>
-                      <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"14px",padding:"2px 6px",marginLeft:"8px",flexShrink:0}} onClick={function(){
-                        var updated = customCards.filter(function(_,j){return j!==i});
-                        setCustomCards(updated);
-                        saveCustomCards(deckId, updated);
-                        saveCustomCardsForDeck(deckId, updated);
+                {showCurrentWords ? <div style={{marginTop:"12px",maxHeight:"500px",overflowY:"auto"}}>
+                  {[].concat(cardsPool.map(function(c){return {c:c,custom:false};}), customCards.map(function(c){return {c:c,custom:true};})).map(function(entry,i){
+                    var c = entry.c;
+                    var streak = streaks[c.w] || 0;
+                    var mastered = streak >= MASTERY_THRESHOLD;
+                    var streakColor = mastered ? C.green : streak >= 10 ? C.gold : streak > 0 ? C.purple : C.textDim;
+                    return <div key={(entry.custom?"cc-":"hw-")+i} style={{display:"flex",alignItems:"center",padding:"10px 4px",borderBottom:"1px solid "+C.cardBorder,gap:"12px"}}>
+                      <span style={{color:entry.custom?C.purple:C.white,fontSize:"15px",fontWeight:400,minWidth:"140px",flexShrink:0}}>{c.w}</span>
+                      <span title={mastered?"Mastered":streak+" in a row"} style={{fontFamily:"'Roboto Mono', monospace",fontSize:"12px",color:streakColor,minWidth:"48px",textAlign:"center",flexShrink:0}}>{mastered?"✓ "+streak:streak+"/"+MASTERY_THRESHOLD}</span>
+                      <span style={{color:C.textMuted,fontSize:"13px",flex:1,textAlign:"right",lineHeight:"1.4"}}>{c.d}</span>
+                      <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"16px",padding:"2px 6px",flexShrink:0}} onClick={function(){
+                        if(entry.custom){
+                          var updated = customCards.filter(function(_,j){return c.w !== customCards[j].w;});
+                          setCustomCards(updated);
+                          saveCustomCards(deckId, updated);
+                          saveCustomCardsForDeck(deckId, updated);
+                        } else {
+                          var updated2 = deletedWords.concat([c.w]);
+                          setDeletedWords(updated2);
+                          saveDeletedWords(updated2);
+                        }
                       }} onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
                     </div>;
                   })}
