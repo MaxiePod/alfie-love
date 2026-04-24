@@ -1557,7 +1557,7 @@ export default function SATVocab(){
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={styles.title}>Lexicon</div>
-        <div style={styles.subtitle}>All the SAT words you'll ever need</div>
+        <div style={styles.subtitle}>SAT Index Cards · AI Companion</div>
         <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"16px",marginBottom:"20px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"14px",padding:"12px 22px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.5)",borderRadius:"3px"}}>
             <div style={{width:"10px",height:"10px",borderRadius:"50%",background:C.purple}}/>
