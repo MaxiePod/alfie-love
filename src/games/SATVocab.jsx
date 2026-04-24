@@ -1170,13 +1170,16 @@ export default function SATVocab(){
   var [userName, setUserName] = useState(getCurrentUser);
   var [streaks, setStreaks] = useState({});
   var [masteredOrder, setMasteredOrder] = useState([]);
+  var [wrongs, setWrongs] = useState([]);
   var [progressLoaded, setProgressLoaded] = useState(false);
-  var [cardsView, setCardsView] = useState("active"); // "active" | "mastered-{batchIndex}"
+  var [cardsView, setCardsView] = useState("active"); // "active" | "wrongs" | "mastered-{batchIndex}"
   var [nameInput, setNameInput] = useState("");
   var streaksRef = useRef({});
   var masteredOrderRef = useRef([]);
+  var wrongsRef = useRef([]);
   useEffect(function(){ streaksRef.current = streaks; }, [streaks]);
   useEffect(function(){ masteredOrderRef.current = masteredOrder; }, [masteredOrder]);
+  useEffect(function(){ wrongsRef.current = wrongs; }, [wrongs]);
   var [newWord, setNewWord] = useState("");
   var [newDef, setNewDef] = useState("");
   var [newPos, setNewPos] = useState("adj");
@@ -1214,8 +1217,10 @@ export default function SATVocab(){
     loadProgress(userName).then(function(p){
       setStreaks(p.streaks);
       setMasteredOrder(p.masteredOrder);
+      setWrongs(p.wrongs || []);
       streaksRef.current = p.streaks;
       masteredOrderRef.current = p.masteredOrder;
+      wrongsRef.current = p.wrongs || [];
       setProgressLoaded(true);
     });
   }, [userName]);
@@ -1236,13 +1241,15 @@ export default function SATVocab(){
 
   var masteredBatches = useMemo(function(){ return getMasteredBatches(masteredOrder); }, [masteredOrder]);
 
-  // When Cards tier is selected and cardsView is not in range (batches changed), reset to active
+  // When Cards tier is selected and cardsView is not in range (batches changed, wrongs emptied), reset to active
   useEffect(function(){
-    if(cardsView !== "active" && cardsView.indexOf("mastered-")===0){
+    if(cardsView.indexOf("mastered-")===0){
       var idx = parseInt(cardsView.slice("mastered-".length),10);
       if(!masteredBatches[idx]) setCardsView("active");
+    } else if(cardsView === "wrongs" && wrongs.length === 0){
+      setCardsView("active");
     }
-  }, [masteredBatches, cardsView]);
+  }, [masteredBatches, cardsView, wrongs]);
 
   var allWords = useMemo(function(){
     return WORDS.filter(function(w){ return deletedWords.indexOf(w.w)===-1; })
@@ -1257,6 +1264,10 @@ export default function SATVocab(){
     if(cardsView === "active"){
       return allCards.filter(function(w){ return masteredOrder.indexOf(w.w)===-1; });
     }
+    if(cardsView === "wrongs"){
+      var wset = {}; wrongs.forEach(function(w){ wset[w]=true; });
+      return allCards.filter(function(w){ return wset[w.w]; });
+    }
     if(cardsView.indexOf("mastered-")===0){
       var idx = parseInt(cardsView.slice("mastered-".length),10);
       var batch = masteredBatches[idx] || [];
@@ -1264,7 +1275,7 @@ export default function SATVocab(){
       return allCards.filter(function(w){ return set[w.w]; });
     }
     return allCards;
-  }, [tier, cardsView, allWords, masteredOrder, masteredBatches]);
+  }, [tier, cardsView, allWords, masteredOrder, masteredBatches, wrongs]);
   var totalAvailable = pool.length;
   var raceOptions = useMemo(function(){
     var o = [10,15,20,25,40,50].filter(function(n){ return n<=totalAvailable; });
@@ -1331,32 +1342,45 @@ export default function SATVocab(){
     // Per-word streak tracking for Cards tier
     if(userName && q.word.t==="cards"){
       var isCorrect = (t.tier==="full" || t.tier==="partial");
-      var next = applyAnswer(streaksRef.current, masteredOrderRef.current, q.word.w, isCorrect);
+      var next = applyAnswer(streaksRef.current, masteredOrderRef.current, wrongsRef.current, q.word.w, isCorrect);
       streaksRef.current = next.streaks;
       masteredOrderRef.current = next.masteredOrder;
+      wrongsRef.current = next.wrongs;
       setStreaks(next.streaks);
       setMasteredOrder(next.masteredOrder);
+      setWrongs(next.wrongs);
     }
 
     return t;
   };
 
+  var doAdvance = function(questionsLen){
+    var newMistakes = mistakesRef.current;
+    var newQ = qIndexRef.current + 1;
+    if((mode==="survival" && newMistakes>=3) || (mode==="race" && newQ>=questionsLen)){
+      setTimerRunning(false);
+      finishRound();
+    } else {
+      qIndexRef.current = newQ;
+      setQIndex(newQ);
+      setAnswered(null);
+      setTypedAnswer("");
+      setTypedSentence("");
+    }
+  };
   var advanceAfterAnswer = function(isMiss, questionsLen){
+    // In the LEARN WRONGS pile, pause after a miss so the user can study the
+    // correct definition. They dismiss via the Continue button on the feedback card.
+    if(isMiss && tier==="cards" && cardsView==="wrongs"){
+      setTimerRunning(false);
+      return;
+    }
     var delay = isMiss ? 1800 : 900;
-    setTimeout(function(){
-      var newMistakes = mistakesRef.current;
-      var newQ = qIndexRef.current + 1;
-      if((mode==="survival" && newMistakes>=3) || (mode==="race" && newQ>=questionsLen)){
-        setTimerRunning(false);
-        finishRound();
-      } else {
-        qIndexRef.current = newQ;
-        setQIndex(newQ);
-        setAnswered(null);
-        setTypedAnswer("");
-        setTypedSentence("");
-      }
-    }, delay);
+    setTimeout(function(){ doAdvance(questionsLen); }, delay);
+  };
+  var continueFromPause = function(){
+    setTimerRunning(true);
+    doAdvance(questions.length);
   };
 
   var handleChoiceAnswer = function(selectedWord){
@@ -1422,7 +1446,7 @@ export default function SATVocab(){
       avgScore: avg,
       totalAnswered: totalAnsweredRef.current,
     }]); });
-    if(userName) saveProgress(userName, streaksRef.current, masteredOrderRef.current);
+    if(userName) saveProgress(userName, streaksRef.current, masteredOrderRef.current, wrongsRef.current);
     setTimeout(function(){ setScreen(currentPlayerIdx+1<playerCount ? "transition" : "results"); }, 1500);
   };
 
@@ -1442,7 +1466,7 @@ export default function SATVocab(){
       avgScore: avg,
       totalAnswered: totalAnsweredRef.current,
     }]); });
-    if(userName) saveProgress(userName, streaksRef.current, masteredOrderRef.current);
+    if(userName) saveProgress(userName, streaksRef.current, masteredOrderRef.current, wrongsRef.current);
     if(currentPlayerIdx+1<playerCount) setScreen("transition"); else setScreen("results");
   };
 
@@ -1541,7 +1565,7 @@ export default function SATVocab(){
             <span style={{fontSize:"22px",fontWeight:500,color:C.white,letterSpacing:"2px",textTransform:"uppercase",lineHeight:1}}>{userName}{progressLoaded?"":"\u2026"}</span>
             <span style={{fontSize:"11px",fontWeight:400,color:C.purple,letterSpacing:"1.5px",textTransform:"uppercase"}}>{deckLabel}</span>
           </div>
-          <button onClick={function(){ setCurrentUser(""); setUserName(""); setNameInput(""); setStreaks({}); setMasteredOrder([]); }}
+          <button onClick={function(){ setCurrentUser(""); setUserName(""); setNameInput(""); setStreaks({}); setMasteredOrder([]); setWrongs([]); }}
             style={{background:"transparent",border:"1px solid "+C.inputBorder,color:C.textDim,padding:"6px 14px",fontSize:"10px",fontFamily:"'Roboto', sans-serif",fontWeight:400,letterSpacing:"1.5px",textTransform:"uppercase",cursor:"pointer",borderRadius:"2px"}}
             onMouseEnter={function(e){e.target.style.borderColor=C.purple;e.target.style.color=C.purple}}
             onMouseLeave={function(e){e.target.style.borderColor=C.inputBorder;e.target.style.color=C.textDim}}>Switch</button>
@@ -1599,6 +1623,7 @@ export default function SATVocab(){
               {tier==="cards" ? (function(){
                 var activeCount = allWords.filter(function(w){ return w.t==="cards" && masteredOrder.indexOf(w.w)===-1; }).length;
                 var viewOptions = [{value:"active",label:"Active ("+activeCount+")"}];
+                if(wrongs.length > 0) viewOptions.push({value:"wrongs",label:"Learn Wrongs ("+wrongs.length+")"});
                 masteredBatches.forEach(function(b,i){
                   var lo = i*BATCH_SIZE+1;
                   var hi = i*BATCH_SIZE+b.length;
@@ -1610,7 +1635,9 @@ export default function SATVocab(){
                   <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>
                     {cardsView==="active"
                       ? "Words you're still learning. Get one right "+MASTERY_THRESHOLD+" in a row to master it."
-                      : "Review mastered words. A miss drops the word back to Active."}
+                      : cardsView==="wrongs"
+                        ? "Words you've missed. Get one right to move it back out. Miss it again and the definition stays up until you X out."
+                        : "Review mastered words. A miss drops the word back to Active."}
                   </div>
                 </div>;
               })() : null}
@@ -1663,9 +1690,13 @@ export default function SATVocab(){
                     var c = entry.c;
                     var streak = streaks[c.w] || 0;
                     var mastered = streak >= MASTERY_THRESHOLD;
+                    var isWrong = wrongs.indexOf(c.w) !== -1;
                     var streakColor = mastered ? C.green : streak >= 10 ? C.gold : streak > 0 ? C.purple : C.textDim;
                     return <div key={(entry.custom?"cc-":"hw-")+i} style={{display:"flex",alignItems:"center",padding:"10px 4px",borderBottom:"1px solid "+C.cardBorder,gap:"12px"}}>
-                      <span style={{color:entry.custom?C.purple:C.white,fontSize:"15px",fontWeight:400,minWidth:"140px",flexShrink:0}}>{c.w}</span>
+                      <span style={{color:entry.custom?C.purple:C.white,fontSize:"15px",fontWeight:400,minWidth:"140px",flexShrink:0,display:"flex",alignItems:"center",gap:"6px"}}>
+                        {c.w}
+                        {isWrong ? <span title="In Learn Wrongs" style={{fontSize:"9px",letterSpacing:"1px",color:C.red,background:C.redBg,border:"1px solid rgba(219,92,92,0.3)",padding:"1px 5px",borderRadius:"2px",textTransform:"uppercase",fontWeight:500}}>Wrong</span> : null}
+                      </span>
                       <span title={mastered?"Mastered":streak+" in a row"} style={{fontFamily:"'Roboto Mono', monospace",fontSize:"12px",color:streakColor,minWidth:"48px",textAlign:"center",flexShrink:0}}>{mastered?"✓ "+streak:streak+"/"+MASTERY_THRESHOLD}</span>
                       <span style={{color:C.textMuted,fontSize:"13px",flex:1,textAlign:"right",lineHeight:"1.4"}}>{c.d}</span>
                       <button style={{background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"16px",padding:"2px 6px",flexShrink:0}} onClick={function(){
@@ -1714,6 +1745,7 @@ export default function SATVocab(){
     var inputBorderColor = "#333";
     if(answered) inputBorderColor = scoreTier(answered.score).color;
     else if(judging) inputBorderColor = C.purple;
+    var pausedForReview = answered && tier==="cards" && cardsView==="wrongs" && scoreTier(answered.score).tier==="miss";
 
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
@@ -1835,6 +1867,20 @@ export default function SATVocab(){
                 {answered ? <FeedbackCard answered={answered} word={currentQ.word} userAnswer={isBoth?(typedAnswer+"  //  "+typedSentence):typedAnswer} learnMode={learnMode} canLearn={typeTarget==="definition"}/> : null}
               </div>
             )}
+            {pausedForReview ? (
+              <div style={{marginTop:"20px",padding:"16px 18px",background:C.redBg,border:"1px solid "+C.red,borderRadius:"3px",textAlign:"left",position:"relative"}}>
+                <button onClick={continueFromPause} aria-label="Continue" style={{position:"absolute",top:"8px",right:"8px",background:"transparent",border:"none",color:C.textDim,cursor:"pointer",fontSize:"20px",lineHeight:1,padding:"4px 8px"}}
+                  onMouseEnter={function(e){e.target.style.color=C.red}} onMouseLeave={function(e){e.target.style.color=C.textDim}}>&times;</button>
+                <div style={{fontSize:"10px",letterSpacing:"3px",textTransform:"uppercase",color:C.red,marginBottom:"10px"}}>Study this one</div>
+                <div style={{fontSize:"22px",fontWeight:300,color:C.white,letterSpacing:"1px",marginBottom:"8px"}}>{currentQ.word.w}</div>
+                <div style={{fontSize:"14px",color:C.textMuted,lineHeight:"1.5",marginBottom:currentQ.word.syn&&currentQ.word.syn.length?"10px":"16px"}}>{currentQ.word.d}</div>
+                {currentQ.word.syn && currentQ.word.syn.length ? <div style={{fontSize:"11px",color:C.textDim,lineHeight:"1.5",marginBottom:"16px"}}>
+                  <span style={{letterSpacing:"2px",textTransform:"uppercase"}}>Synonyms: </span>{currentQ.word.syn.slice(0,6).join(", ")}
+                </div> : null}
+                <button onClick={continueFromPause} style={Object.assign({},styles.btn,{width:"100%",fontSize:"11px"})}
+                  onMouseEnter={function(e){e.target.style.background="#909096"}} onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Continue</button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
