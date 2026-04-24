@@ -1557,13 +1557,7 @@ export default function SATVocab(){
     return(
       <div style={styles.app}>{fontLink}{pulseCSS}
         <div style={styles.title}>Lexicon</div>
-        <div style={styles.subtitle}>{(function(){
-          var e=allWords.filter(function(w){return w.t==="easy"}).length;
-          var m=allWords.filter(function(w){return w.t==="med"}).length;
-          var h=allWords.filter(function(w){return w.t==="hard"}).length;
-          var c=allWords.filter(function(w){return w.t==="cards"}).length;
-          return allWords.length+" words · "+e+" easy · "+m+" medium · "+h+" hard · "+c+" family";
-        })()}</div>
+        <div style={styles.subtitle}>All the SAT words you'll ever need</div>
         <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"16px",marginBottom:"20px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"14px",padding:"12px 22px",background:C.purpleBg,border:"1px solid rgba(155,142,196,0.5)",borderRadius:"3px"}}>
             <div style={{width:"10px",height:"10px",borderRadius:"50%",background:C.purple}}/>
