@@ -893,15 +893,31 @@ function offlineJudge(wordEntry, userAnswer) {
   return { score: bestScore, note: bestNote };
 }
 
-async function aiJudge(word, correctDef, userAnswer, wordEntry, onAiUnavailable) {
-  var offline = offlineJudge(wordEntry, userAnswer);
-  if (offline.score >= 80) return offline;
+async function aiJudge(word, correctDef, userAnswer, wordEntry, onAiUnavailable, mode) {
+  mode = mode || "definition";
+  var offline;
+  if (mode === "definition") {
+    offline = offlineJudge(wordEntry, userAnswer);
+    if (offline.score >= 80) return offline;
+  } else {
+    // Sentence mode has no meaningful offline judge — at best we can check whether
+    // the word (or its stem) actually appears in the sentence.
+    var wordNorm = normalizeWord(word);
+    var wStem = stemWord(wordNorm);
+    var sentenceWords = normalizeWord(userAnswer).split(/\s+/);
+    var hasWord = sentenceWords.some(function(w) {
+      return w === wordNorm || (w.length >= 4 && wStem.length >= 3 && stemWord(w) === wStem);
+    });
+    offline = hasWord
+      ? { score: 50, note: "Word used — AI judge offline" }
+      : { score: 0, note: "Word not found in sentence" };
+  }
 
   try {
     var res = await fetch("/api/judge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ word: word, definition: correctDef, answer: userAnswer })
+      body: JSON.stringify({ word: word, definition: correctDef, answer: userAnswer, mode: mode })
     });
     if (res.status === 402) {
       if (onAiUnavailable) onAiUnavailable();
@@ -1030,14 +1046,27 @@ function FeedbackCard(props) {
   if (!answered || !answered.score && answered.score !== 0) return null;
   var learnMode = props.learnMode;
   var t = scoreTier(answered.score);
-  var showLearn = learnMode && userAnswer && userAnswer.trim().length > 0;
+  // Learn mode saves the typed phrase as an acceptable definition for this word.
+  // It only makes sense for definition-typing; skip it for sentence / Final Frontier results.
+  var canLearn = props.canLearn !== false && !(answered && (answered.defResult || answered.sentResult));
+  var showLearn = learnMode && canLearn && userAnswer && userAnswer.trim().length > 0;
   var handleLearn = function() {
     saveLearnedDef(word.w, userAnswer.trim());
     setLearned(true);
   };
+  var hasBoth = answered.defResult && answered.sentResult;
   return (
     <div style={{marginTop:"16px"}}>
-      <div style={{marginBottom:"12px"}}><ScoreBar score={answered.score}/></div>
+      {hasBoth ? <div style={{marginBottom:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <span style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim,minWidth:"70px",textAlign:"left"}}>Definition</span>
+          <div style={{flex:1}}><ScoreBar score={answered.defResult.score}/></div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+          <span style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim,minWidth:"70px",textAlign:"left"}}>Sentence</span>
+          <div style={{flex:1}}><ScoreBar score={answered.sentResult.score}/></div>
+        </div>
+      </div> : <div style={{marginBottom:"12px"}}><ScoreBar score={answered.score}/></div>}
       <div style={{padding:"12px 16px",borderRadius:"2px",marginBottom:"8px",background:t.bg,border:"1px solid "+t.color}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{fontSize:"13px",fontWeight:400,color:t.color}}>
@@ -1102,11 +1131,14 @@ export default function SATVocab(){
   var [learnMode, setLearnMode] = useState(false);
   var [direction, setDirection] = useState("w2d"); // "w2d" = word→def, "d2w" = def→word
   var [inputMode, setInputMode] = useState("choice"); // "choice" = multiple choice, "type" = typed
+  var [typeTarget, setTypeTarget] = useState("definition"); // "definition" | "sentence" | "both" — only active when usesAI
   var [aiUnavailable, setAiUnavailable] = useState(false);
   // Back-compat shim: keep isTyped/isReverse/usesAI derived so the existing render logic is cleaner.
   var isTyped = inputMode === "type";
   var isReverse = direction === "d2w"; // prompt shows the definition
   var usesAI = direction === "w2d" && inputMode === "type"; // only w2d+type goes through /api/judge
+  var isSentence = usesAI && typeTarget === "sentence";
+  var isBoth = usesAI && typeTarget === "both";
   var [tier, setTier] = useState("cards");
   var [numChoices, setNumChoices] = useState(4);
   var [raceCount, setRaceCount] = useState(9999);
@@ -1128,6 +1160,7 @@ export default function SATVocab(){
   var [wordLog, setWordLog] = useState([]);
   var [gameOver, setGameOver] = useState(false);
   var [typedAnswer, setTypedAnswer] = useState("");
+  var [typedSentence, setTypedSentence] = useState(""); // Only used when typeTarget==="both"
   var [judging, setJudging] = useState(false);
   var [customCards, setCustomCards] = useState(function(){ return getCustomCards(getDeckId(getCurrentUser())); });
   var [deletedWords, setDeletedWords] = useState(getDeletedWords);
@@ -1255,7 +1288,7 @@ export default function SATVocab(){
   var startPlayerRound = function(){
     setQuestions(generateQuestions()); setQIndex(0); setMistakes(0); setPoints(0);
     setTotalAnswered(0); setTotalScoreSum(0);
-    setStreak(0); setBestStreak(0); setAnswered(null); setTypedAnswer("");
+    setStreak(0); setBestStreak(0); setAnswered(null); setTypedAnswer(""); setTypedSentence("");
     setWordLog([]); setGameOver(false); setTimerKey(function(k){ return k+1; });
     // Reset refs too
     mistakesRef.current=0; pointsRef.current=0; totalAnsweredRef.current=0;
@@ -1320,6 +1353,7 @@ export default function SATVocab(){
         setQIndex(newQ);
         setAnswered(null);
         setTypedAnswer("");
+        setTypedSentence("");
       }
     }, delay);
   };
@@ -1335,19 +1369,39 @@ export default function SATVocab(){
 
   var handleTypedSubmit = async function(){
     if(answered || judging || !typedAnswer.trim()) return;
+    if(isBoth && !typedSentence.trim()) return;
     var q = questions[qIndex];
+    var onUnavail = function(){ setAiUnavailable(true); };
     var result;
+    var loggedAnswer = typedAnswer.trim();
     if(direction === "d2w"){
-      // Typed the WORD given its definition — straight spelling/stem match, no API call
+      // Typed the WORD given its definition — local match only
       result = wordMatchJudge(q.word.w, typedAnswer.trim());
-    } else {
-      // Typed a DEFINITION for the word — AI-scored (offline fallback inside aiJudge)
+    } else if(isBoth){
+      // Final Frontier: both definition and sentence, scored independently, min wins
       setTimerRunning(false); setJudging(true);
-      result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim(), q.word, function(){ setAiUnavailable(true); });
+      var pair = await Promise.all([
+        aiJudge(q.word.w, q.word.d, typedAnswer.trim(), q.word, onUnavail, "definition"),
+        aiJudge(q.word.w, q.word.d, typedSentence.trim(), q.word, onUnavail, "sentence"),
+      ]);
+      setTimerRunning(true); setJudging(false);
+      var defR = pair[0], sentR = pair[1];
+      result = {
+        score: Math.min(defR.score, sentR.score),
+        note: "Def " + defR.score + "% · Sentence " + sentR.score + "%",
+        defResult: defR,
+        sentResult: sentR,
+      };
+      loggedAnswer = typedAnswer.trim() + "  //  " + typedSentence.trim();
+    } else {
+      // Definition-only or sentence-only — single AI call
+      setTimerRunning(false); setJudging(true);
+      var mode = isSentence ? "sentence" : "definition";
+      result = await aiJudge(q.word.w, q.word.d, typedAnswer.trim(), q.word, onUnavail, mode);
       setTimerRunning(true); setJudging(false);
     }
-    var t = processResult(result.score, q, typedAnswer.trim());
-    setAnswered({score:result.score, note:result.note});
+    var t = processResult(result.score, q, loggedAnswer);
+    setAnswered({ score: result.score, note: result.note, defResult: result.defResult, sentResult: result.sentResult });
     advanceAfterAnswer(t.tier==="miss", questions.length);
   };
 
@@ -1537,6 +1591,11 @@ export default function SATVocab(){
             {!isTyped ? <div>
               <div style={styles.label}>Number of Choices</div>
               <SegmentedControl options={[{value:3,label:"3"},{value:4,label:"4"},{value:6,label:"6"}]} value={numChoices} onChange={setNumChoices}/>
+            </div> : null}
+            {usesAI ? <div>
+              <div style={styles.label}>Type What?</div>
+              <SegmentedControl options={[{value:"definition",label:"Definition"},{value:"sentence",label:"Sentence"},{value:"both",label:"Final Frontier"}]} value={typeTarget} onChange={setTypeTarget}/>
+              <div style={{fontSize:"11px",color:C.textDim,marginTop:"6px"}}>{typeTarget==="definition" ? "Type the word's definition — AI scores meaning." : typeTarget==="sentence" ? "Use the word in a sentence — AI scores usage." : "Final Frontier — type both a definition and a sentence. Lower of the two scores counts."}</div>
             </div> : null}
           </div>
           {mode==="race" ? <div style={{marginTop:"20px"}}>
@@ -1746,18 +1805,28 @@ export default function SATVocab(){
               </div>
             ) : (
               <div>
+                {isBoth ? <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim,marginBottom:"6px",textAlign:"left"}}>Definition</div> : null}
                 <input ref={inputRef} style={Object.assign({},styles.input,{fontSize:"16px",textAlign:"left",borderBottomColor:inputBorderColor})}
-                  value={typedAnswer} onChange={function(e){setTypedAnswer(e.target.value)}} onKeyDown={handleTypeKeyDown}
-                  placeholder={direction==="d2w" ? "Type the word..." : "Type your definition..."} autoFocus disabled={!!answered||judging}/>
-                {!answered && !judging ? <button onClick={handleTypedSubmit} disabled={!typedAnswer.trim()}
-                  style={Object.assign({},styles.btn,{marginTop:"12px",width:"100%",opacity:typedAnswer.trim()?1:0.4,fontSize:"11px"})}
-                  onMouseEnter={function(e){if(typedAnswer.trim())e.target.style.background="#909096"}}
-                  onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Submit</button> : null}
+                  value={typedAnswer} onChange={function(e){setTypedAnswer(e.target.value)}} onKeyDown={isBoth?undefined:handleTypeKeyDown}
+                  placeholder={direction==="d2w" ? "Type the word..." : isSentence ? ("Use " + currentQ.word.w + " in a sentence...") : isBoth ? "Type the definition..." : "Type your definition..."} autoFocus disabled={!!answered||judging}/>
+                {isBoth ? <div style={{marginTop:"12px"}}>
+                  <div style={{fontSize:"10px",letterSpacing:"2px",textTransform:"uppercase",color:C.textDim,marginBottom:"6px",textAlign:"left"}}>Sentence using {currentQ.word.w}</div>
+                  <input style={Object.assign({},styles.input,{fontSize:"16px",textAlign:"left",borderBottomColor:inputBorderColor})}
+                    value={typedSentence} onChange={function(e){setTypedSentence(e.target.value)}} onKeyDown={handleTypeKeyDown}
+                    placeholder={"Use " + currentQ.word.w + " in a sentence..."} disabled={!!answered||judging}/>
+                </div> : null}
+                {!answered && !judging ? (function(){
+                  var ready = isBoth ? (typedAnswer.trim() && typedSentence.trim()) : typedAnswer.trim();
+                  return <button onClick={handleTypedSubmit} disabled={!ready}
+                    style={Object.assign({},styles.btn,{marginTop:"12px",width:"100%",opacity:ready?1:0.4,fontSize:"11px"})}
+                    onMouseEnter={function(e){if(ready)e.target.style.background="#909096"}}
+                    onMouseLeave={function(e){e.target.style.background=C.btnBg}}>Submit</button>;
+                })() : null}
                 {judging ? <div style={{marginTop:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px"}}>
                   <div style={{display:"flex",gap:"4px"}}>{[0,1,2].map(function(i){return <div key={i} style={{width:"6px",height:"6px",borderRadius:"50%",background:C.purple,animation:"pulse 1.2s ease-in-out infinite",animationDelay:i*0.2+"s"}}/>;})}</div>
-                  <span style={{fontSize:"12px",color:C.purple,letterSpacing:"1px"}}>AI is scoring...</span>
+                  <span style={{fontSize:"12px",color:C.purple,letterSpacing:"1px"}}>AI is scoring{isBoth?" both":""}...</span>
                 </div> : null}
-                {answered ? <FeedbackCard answered={answered} word={currentQ.word} userAnswer={typedAnswer} learnMode={learnMode}/> : null}
+                {answered ? <FeedbackCard answered={answered} word={currentQ.word} userAnswer={isBoth?(typedAnswer+"  //  "+typedSentence):typedAnswer} learnMode={learnMode} canLearn={typeTarget==="definition"}/> : null}
               </div>
             )}
           </div>
