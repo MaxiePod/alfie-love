@@ -1562,6 +1562,18 @@ export default function SATVocab(){
     setCustomCards(updated);
     saveCustomCards(deckId, updated);
     saveCustomCardsForDeck(deckId, updated);
+    // Re-adding a word (often with a different sense) should start its
+    // streak fresh — old progress was tied to the previous definition.
+    var nextStreaks = Object.assign({}, streaks); delete nextStreaks[card.w];
+    var nextMastered = masteredOrder.filter(function(x){return x !== card.w;});
+    var nextWrongs = wrongs.filter(function(x){return x !== card.w;});
+    setStreaks(nextStreaks);
+    setMasteredOrder(nextMastered);
+    setWrongs(nextWrongs);
+    streaksRef.current = nextStreaks;
+    masteredOrderRef.current = nextMastered;
+    wrongsRef.current = nextWrongs;
+    if(userName) saveProgress(userName, nextStreaks, nextMastered, nextWrongs);
     setNewWord(""); setNewDef(""); setNewPos(""); setNewSyn(""); setAddError(""); setSuggestedWord(""); setPendingSenses(null);
   };
 
