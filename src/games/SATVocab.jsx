@@ -1513,11 +1513,13 @@ export default function SATVocab(){
     setSuggestedWord("");
     setPendingSenses(null);
     var found = lookupWord(w);
-    var d = (override ? "" : newDef.trim()) || (found ? found.d : "") || "";
-    var pos = newPos || (found ? found.pos : "adj");
-    var syns = (!override && newSyn) ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : (found ? found.syn : []);
+    var d = override ? "" : newDef.trim();
+    var pos = newPos;
+    var syns = (!override && newSyn) ? newSyn.split(",").map(function(s){return s.trim()}).filter(Boolean) : [];
 
-    // If no definition yet, try the online dictionary
+    // Always check the API for sense ambiguity when the user hasn't typed a
+    // definition — even if the word exists in the local list, since that entry
+    // may carry only one of several valid senses the user might want.
     var remoteWord = null;
     if(!d){
       setAddingCard(true);
@@ -1525,24 +1527,29 @@ export default function SATVocab(){
       setAddingCard(false);
       if(remote && remote.senses && remote.senses.length){
         if(remote.senses.length > 1){
-          // Ambiguous — show the sense picker and wait for user to pick one.
           setPendingSenses(remote.senses);
           return;
         }
         var s0 = remote.senses[0];
         d = s0.d;
         if(remote.w) remoteWord = remote.w;
-        if(!found) pos = s0.pos;
+        if(!pos) pos = s0.pos;
         if(!syns.length) syns = s0.syn;
       } else if(remote && remote.suggestion){
         setSuggestedWord(remote.suggestion);
         setAddError("\""+w+"\" isn't in the dictionary.");
         return;
+      } else if(found){
+        d = found.d;
+        if(!pos) pos = found.pos;
+        if(!syns.length) syns = found.syn;
       } else {
         setAddError("Couldn't find a definition for \""+w+"\". Please type one.");
         return;
       }
     }
+    if(!pos) pos = found ? found.pos : "adj";
+    if(!syns.length && found) syns = found.syn;
 
     var card = {
       w: found ? found.w : (remoteWord || (w.charAt(0).toUpperCase() + w.slice(1))),
